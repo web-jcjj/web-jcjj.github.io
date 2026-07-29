@@ -2,354 +2,402 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Control de Asistencia</title>
   <style>
-    * { 
-      box-sizing: border-box; 
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --error: #ef4444;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --border: #e2e8f0;
     }
 
-    /* CENTRADO PERFECTO EN MÓVIL Y COMPUTADORA */
-    body { 
-      background-color: #f3f4f6; 
-      display: flex; 
-      justify-content: center; 
-      align-items: center; 
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
       min-height: 100vh;
-      min-height: 100dvh; /* Adaptación precisa para pantallas de celulares */
-      margin: 0; 
-      padding: 16px; 
+      padding: 1rem;
     }
 
-    /* CONTENEDOR TIPO TARJETA RESPONSIVO */
-    .card { 
-      background: #ffffff; 
-      padding: 28px 24px; 
-      border-radius: 16px; 
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); 
-      width: 100%; 
-      max-width: 420px; /* Tamaño ideal en PC */
-      margin: auto; 
+    .container {
+      background: var(--card-bg);
+      width: 100%;
+      max-width: 480px;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      border: 1px solid var(--border);
     }
 
-    h2 { margin-top: 0; color: #1f2937; text-align: center; margin-bottom: 12px; font-size: 22px; }
-    
-    .event-badge { 
-      background-color: #ecfdf5; 
-      color: #065f46; 
-      border: 1px solid #a7f3d0; 
-      padding: 12px 14px; 
-      border-radius: 8px; 
-      font-size: 14px; 
-      text-align: center; 
-      font-weight: 600; 
-      margin-bottom: 20px; 
-      cursor: default;
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+      text-align: center;
+      color: var(--primary);
     }
-    
-    .form-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 6px; font-weight: 600; color: #374151; font-size: 14px; }
-    input, select { 
-      width: 100%; 
-      padding: 12px; 
-      border: 1px solid #d1d5db; 
-      border-radius: 8px; 
-      font-size: 16px; /* Evita el zoom automático en Safari/iOS */
-      background-color: white; 
+
+    .subtitle {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 1rem;
       outline: none;
       transition: border-color 0.2s;
     }
-    input:focus, select:focus { border-color: #2563eb; }
 
-    button { 
-      width: 100%; 
-      padding: 13px; 
-      background-color: #2563eb; 
-      color: white; 
-      border: none; 
-      border-radius: 8px; 
-      font-weight: bold; 
-      cursor: pointer; 
-      font-size: 15px; 
-      margin-top: 5px; 
+    input:focus, select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
       transition: background-color 0.2s;
     }
-    button:hover { background-color: #1d4ed8; }
-    button:disabled { background-color: #9ca3af; cursor: not-allowed; }
-    .btn-success { background-color: #059669; }
-    .btn-success:hover { background-color: #047857; }
-    
-    .hidden { display: none; }
-    .alert { padding: 12px; border-radius: 8px; margin-top: 15px; font-size: 14px; text-align: center; }
-    .alert-error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
-    .alert-info { background-color: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
-    
-    .status-box { text-align: center; padding: 10px 5px; }
-    .icon-success { font-size: 48px; color: #059669; margin-bottom: 8px; }
-    .icon-warning { font-size: 48px; color: #d97706; margin-bottom: 8px; }
+
+    button:hover {
+      background-color: var(--primary-hover);
+    }
+
+    button:disabled {
+      background-color: var(--text-muted);
+      cursor: not-allowed;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .alert {
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      margin-bottom: 1.25rem;
+      text-align: center;
+    }
+
+    .alert-info { background-color: #dbeafe; color: #1e40af; }
+    .alert-error { background-color: #fee2e2; color: #991b1b; }
+    .alert-success { background-color: #d1fae5; color: #065f46; }
+    .alert-warning { background-color: #fef3c7; color: #92400e; }
+
+    .result-screen {
+      text-align: center;
+      padding: 1rem 0;
+    }
+
+    .result-screen svg {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 1rem;
+    }
+
+    .result-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .result-msg {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
 
-<div class="card">
-  <h2>Control de Asistencia</h2>
-  <!-- Muestra el evento activo limpiamente -->
-  <div id="event-badge" class="event-badge">Cargando evento activo...</div>
+  <div class="container">
+    <h1>Control de Asistencia</h1>
+    <p class="subtitle" id="event-name">Cargando información del evento...</p>
 
-  <!-- Paso 1: Buscar DNI -->
-  <div id="step-search">
-    <div class="form-group">
-      <label for="dni">Número de DNI</label>
-      <input type="text" id="dni" placeholder="Ingrese DNI" maxlength="8" pattern="[0-9]*" inputmode="numeric" required autofocus />
+    <!-- Área de Mensajes de Estado -->
+    <div id="message-box" class="alert hidden"></div>
+
+    <!-- PASO 1: Búsqueda por DNI -->
+    <div id="step-search">
+      <div class="form-group">
+        <label for="dni">Número de DNI</label>
+        <input type="text" id="dni" placeholder="Ingrese su DNI" maxlength="8" pattern="[0-9]*" inputmode="numeric">
+      </div>
+      <button id="btn-buscar" onclick="buscarUsuario()">Consultar Asistencia</button>
     </div>
-    <button type="button" id="btn-buscar" onclick="buscarUsuario()">Buscar y Registrar Asistencia</button>
+
+    <!-- PASO 2: Registro de Usuario Nuevo (si no existe localmente) -->
+    <div id="step-register" class="hidden">
+      <div class="form-group">
+        <label for="nombres">Nombres</label>
+        <input type="text" id="nombres" placeholder="Nombres">
+      </div>
+      <div class="form-group">
+        <label for="apellidos">Apellidos</label>
+        <input type="text" id="apellidos" placeholder="Apellidos">
+      </div>
+      <div class="form-group">
+        <label for="conjunto">Conjunto / Sector</label>
+        <select id="conjunto">
+          <option value="">Seleccione una opción</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="telefono">Teléfono (Opcional)</label>
+        <input type="tel" id="telefono" placeholder="Número de contacto">
+      </div>
+      <div class="form-group">
+        <label for="correo">Correo Electrónico (Opcional)</label>
+        <input type="email" id="correo" placeholder="correo@ejemplo.com">
+      </div>
+      <button id="btn-guardar" onclick="registrarNuevo()">Guardar y Registrar Asistencia</button>
+    </div>
+
+    <!-- PANTALLA FINAL: Confirmación o Advertencia -->
+    <div id="step-result" class="result-screen hidden">
+      <div id="result-icon"></div>
+      <h2 id="result-title" class="result-title"></h2>
+      <p id="result-message" class="result-msg"></p>
+      <button onclick="reiniciarFormulario()">Registrar otra asistencia</button>
+    </div>
   </div>
 
-  <!-- Paso 2: Nuevo Registro -->
-  <div id="step-register" class="hidden">
-    <div class="alert alert-info" style="margin-bottom:15px;">
-      El DNI no está registrado. Ingrese sus datos para completar el registro.
-    </div>
-    <div class="form-group">
-      <label for="nombres">Nombres *</label>
-      <input type="text" id="nombres" required />
-    </div>
-    <div class="form-group">
-      <label for="apellidos">Apellidos *</label>
-      <input type="text" id="apellidos" required />
-    </div>
-    <div class="form-group">
-      <label for="conjunto">Conjunto *</label>
-      <select id="conjunto" required>
-        <option value="">Cargando opciones...</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label for="telefono">Teléfono (Opcional)</label>
-      <input type="tel" id="telefono" />
-    </div>
-    <div class="form-group">
-      <label for="correo">Correo (Opcional)</label>
-      <input type="email" id="correo" />
-    </div>
-    <button type="button" class="btn-success" id="btn-guardar" onclick="registrarNuevo()">Guardar y Marcar Asistencia</button>
-    <button type="button" style="background:#6b7280; margin-top:8px;" onclick="resetForm()">Volver</button>
-  </div>
+  <script>
+    // REEMPLAZA ESTA URL CON TU URL DE DESPLIEGUE EN GOOGLE APPS SCRIPT
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx-4VeqYrLhlDzNpWGEtSPjyWQWRQtZy1L1sZ7gcnCexDZANYbzUbiK4kGfsJobtpRH/exec";
 
-  <!-- Paso 3A: Registro Exitoso -->
-  <div id="step-success" class="hidden status-box">
-    <div class="icon-success">✓</div>
-    <h3 style="color: #059669; margin-bottom: 8px;">¡Asistencia Registrada!</h3>
-    <p id="success-message-text" style="color: #374151; font-size: 15px; margin-bottom: 20px; line-height: 1.4;"></p>
-    <button type="button" class="btn-success" onclick="resetForm()">Registrar Otra Asistencia</button>
-  </div>
+    let currentDNI = "";
 
-  <!-- Paso 3B: Ya Registrado previamente -->
-  <div id="step-warning" class="hidden status-box">
-    <div class="icon-warning">⚠️</div>
-    <h3 style="color: #d97706; margin-bottom: 8px;">¡Asistencia Ya Registrada!</h3>
-    <p id="warning-message-text" style="color: #374151; font-size: 15px; margin-bottom: 20px; line-height: 1.4;"></p>
-    <button type="button" style="background:#2563eb;" onclick="resetForm()">Entendido / Volver</button>
-  </div>
-
-  <!-- Mensajes de estado -->
-  <div id="status-message"></div>
-</div>
-
-<script>
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx-4VeqYrLhlDzNpWGEtSPjyWQWRQtZy1L1sZ7gcnCexDZANYbzUbiK4kGfsJobtpRH/exec";
-
-  let currentDNI = "";
-
-  document.addEventListener("DOMContentLoaded", () => {
-    cargarInfoInicial();
-
-    // Permite presionar Enter en el campo DNI para enviar el formulario
-    document.getElementById("dni").addEventListener("keypress", function(event) {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        buscarUsuario();
-      }
+    // Cargar evento activo y conjuntos al iniciar
+    document.addEventListener("DOMContentLoaded", () => {
+      cargarInfoInicial();
     });
 
-    // Permite solo el ingreso de números en el campo DNI
-    document.getElementById("dni").addEventListener("input", function(e) {
-      this.value = this.value.replace(/[^0-9]/g, '');
-    });
-  });
+    function showMessage(text, type = "info") {
+      const box = document.getElementById("message-box");
+      box.className = `alert alert-${type}`;
+      box.innerHTML = text;
+      box.classList.remove("hidden");
+    }
 
-  async function cargarInfoInicial() {
-    try {
-      const response = await fetch(`${SCRIPT_URL}?action=obtener_info_inicial`);
-      const result = await response.json();
-      
-      if (result.success) {
-        if (result.evento) {
-          document.getElementById("event-badge").innerHTML = `📍 <strong>Evento Activo:</strong> ${result.evento.nombre}`;
+    function clearMessage() {
+      const box = document.getElementById("message-box");
+      box.classList.add("hidden");
+      box.innerHTML = "";
+    }
+
+    async function cargarInfoInicial() {
+      try {
+        const response = await fetch(`${SCRIPT_URL}?action=obtener_info_inicial`);
+        const data = await response.json();
+
+        if (data.success && data.evento) {
+          document.getElementById("event-name").textContent = `Evento: ${data.evento.nombre}`;
+          if (data.conjuntos) poblarComboConjuntos(data.conjuntos);
         } else {
-          document.getElementById("event-badge").innerHTML = "⚠️ <strong>No hay eventos activos</strong>";
+          document.getElementById("event-name").textContent = "No hay eventos activos programados.";
+          document.getElementById("btn-buscar").disabled = true;
         }
-        if (result.conjuntos) {
-          poblarComboConjuntos(result.conjuntos);
-        }
+      } catch (err) {
+        document.getElementById("event-name").textContent = "Error al conectar con el servidor.";
       }
-    } catch (e) {
-      document.getElementById("event-badge").innerText = "Error al cargar el evento";
-    }
-  }
-
-  function poblarComboConjuntos(lista) {
-    const select = document.getElementById("conjunto");
-    select.innerHTML = '<option value="">-- Seleccione un Conjunto --</option>';
-    lista.forEach(item => {
-      const option = document.createElement("option");
-      option.value = item;
-      option.textContent = item;
-      select.appendChild(option);
-    });
-  }
-
-// Reemplaza la función buscarUsuario() en tu código HTML
-async function buscarUsuario() {
-  const dniInput = document.getElementById("dni").value.trim();
-  if (!dniInput) {
-    showMessage("Ingrese un número de DNI", "error");
-    return;
-  }
-
-  currentDNI = dniInput;
-  showMessage("Validando información...", "info");
-  document.getElementById("btn-buscar").disabled = true;
-
-  try {
-    const response = await fetch(`${SCRIPT_URL}?action=buscar&dni=${encodeURIComponent(dniInput)}`);
-    const result = await response.json();
-
-    document.getElementById("btn-buscar").disabled = false;
-
-    if (result.success) {
-      if (result.yaRegistradoEnEvento) {
-        showWarningScreen(`El DNI <strong>${currentDNI}</strong> ya registró asistencia previamente para el evento <strong>"${result.evento.nombre}"</strong>.`);
-      } else if (result.encontrado && result.asistenciaMarcada) {
-        showSuccessScreen(`¡Bienvenido/a <strong>${result.usuario.nombres} ${result.usuario.apellidos}</strong>!<br>Tu asistencia ha sido registrada para <strong>"${result.evento.nombre}"</strong>.`);
-      } else {
-        clearMessage();
-        if (result.conjuntos) poblarComboConjuntos(result.conjuntos);
-
-        // Si la API encontró nombres y apellidos, autocompletar en los inputs
-        if (result.datosApi && result.datosApi.exito) {
-          document.getElementById("nombres").value = result.datosApi.nombres;
-          document.getElementById("apellidos").value = result.datosApi.apellidos;
-        } else {
-          document.getElementById("nombres").value = "";
-          document.getElementById("apellidos").value = "";
-        }
-
-        document.getElementById("step-search").classList.add("hidden");
-        document.getElementById("step-register").classList.remove("hidden");
-      }
-    } else {
-      showMessage("Error: " + result.message, "error");
-    }
-  } catch (error) {
-    document.getElementById("btn-buscar").disabled = false;
-    showMessage("Error al conectar con la base de datos.", "error");
-  }
-}
-
-  async function registrarNuevo() {
-    const nombres = document.getElementById("nombres").value.trim();
-    const apellidos = document.getElementById("apellidos").value.trim();
-    const conjunto = document.getElementById("conjunto").value.trim();
-    const telefono = document.getElementById("telefono").value.trim();
-    const correo = document.getElementById("correo").value.trim();
-
-    if (!nombres || !apellidos || !conjunto) {
-      showMessage("Por favor complete Nombres, Apellidos y seleccione un Conjunto.", "error");
-      return;
     }
 
-    showMessage("Guardando registro y marcando asistencia...", "info");
-    document.getElementById("btn-guardar").disabled = true;
-
-    const formData = new URLSearchParams();
-    formData.append("action", "registrar_nuevo");
-    formData.append("dni", currentDNI);
-    formData.append("nombres", nombres);
-    formData.append("apellidos", apellidos);
-    formData.append("conjunto", conjunto);
-    formData.append("telefono", telefono);
-    formData.append("correo", correo);
-
-    try {
-      const response = await fetch(SCRIPT_URL, {
-        method: "POST",
-        body: formData
+    function poblarComboConjuntos(lista) {
+      const select = document.getElementById("conjunto");
+      select.innerHTML = '<option value="">Seleccione un conjunto</option>';
+      lista.forEach(item => {
+        const option = document.createElement("option");
+        option.value = item;
+        option.textContent = item;
+        select.appendChild(option);
       });
-      const result = await response.json();
-
-      document.getElementById("btn-guardar").disabled = false;
-
-      if (result.success) {
-        showSuccessScreen(`¡Bienvenido/a <strong>${result.nombres} ${result.apellidos}</strong>!<br>Tus datos fueron guardados y tu asistencia fue marcada para <strong>"${result.evento.nombre}"</strong>.`);
-      } else {
-        showMessage("Error: " + result.message, "error");
-      }
-    } catch (error) {
-      document.getElementById("btn-guardar").disabled = false;
-      showMessage("Error de conexión al guardar los datos.", "error");
     }
-  }
 
-  function showSuccessScreen(htmlText) {
-    clearMessage();
-    hideAllSteps();
-    document.getElementById("success-message-text").innerHTML = htmlText;
-    document.getElementById("step-success").classList.remove("hidden");
-  }
+    // Paso 1: Consultar DNI
+    async function buscarUsuario() {
+      const dniInput = document.getElementById("dni").value.trim();
+      if (!dniInput || dniInput.length < 8) {
+        showMessage("Ingrese un número de DNI válido de 8 dígitos", "error");
+        return;
+      }
 
-  function showWarningScreen(htmlText) {
-    clearMessage();
-    hideAllSteps();
-    document.getElementById("warning-message-text").innerHTML = htmlText;
-    document.getElementById("step-warning").classList.remove("hidden");
-  }
+      currentDNI = dniInput;
+      showMessage("Validando información...", "info");
+      document.getElementById("btn-buscar").disabled = true;
 
-  function hideAllSteps() {
-    document.getElementById("step-search").classList.add("hidden");
-    document.getElementById("step-register").classList.add("hidden");
-    document.getElementById("step-success").classList.add("hidden");
-    document.getElementById("step-warning").classList.add("hidden");
-  }
+      try {
+        const response = await fetch(`${SCRIPT_URL}?action=buscar&dni=${encodeURIComponent(dniInput)}`);
+        const result = await response.json();
 
-  function resetForm() {
-    hideAllSteps();
-    document.getElementById("step-search").classList.remove("hidden");
+        document.getElementById("btn-buscar").disabled = false;
 
-    document.getElementById("dni").value = "";
-    document.getElementById("nombres").value = "";
-    document.getElementById("apellidos").value = "";
-    document.getElementById("conjunto").value = "";
-    document.getElementById("telefono").value = "";
-    document.getElementById("correo").value = "";
-    currentDNI = "";
-    clearMessage();
-    document.getElementById("dni").focus();
-  }
+        if (result.success) {
+          if (result.yaRegistradoEnEvento) {
+            showResultScreen(
+              "warning",
+              "Asistencia Registrada Previamente",
+              `El DNI <strong>${currentDNI}</strong> ya registró su asistencia para el evento <strong>"${result.evento.nombre}"</strong> a las ${result.fechaHoraAnterior}.`
+            );
+          } else if (result.encontrado && result.asistenciaMarcada) {
+            showResultScreen(
+              "success",
+              "¡Asistencia Registrada!",
+              `Bienvenido/a <strong>${result.usuario.nombres} ${result.usuario.apellidos}</strong>.<br>Se marcó tu asistencia para <strong>"${result.evento.nombre}"</strong>.`
+            );
+          } else {
+            clearMessage();
+            if (result.conjuntos) poblarComboConjuntos(result.conjuntos);
 
-  function showMessage(msg, type) {
-    const container = document.getElementById("status-message");
-    container.className = `alert alert-${type}`;
-    container.innerText = msg;
-  }
+            // Limpiar valores previos
+            document.getElementById("nombres").value = "";
+            document.getElementById("apellidos").value = "";
 
-  function clearMessage() {
-    const container = document.getElementById("status-message");
-    container.className = "";
-    container.innerText = "";
-  }
-</script>
+            // Autocompletado si los datos provienen de la API de RENIEC
+            if (result.datosApi && result.datosApi.exito) {
+              document.getElementById("nombres").value = result.datosApi.nombres || "";
+              document.getElementById("apellidos").value = result.datosApi.apellidos || "";
+              showMessage("Datos encontrados en RENIEC. Complete los campos faltantes.", "info");
+            } else {
+              showMessage("DNI no registrado localmente. Ingrese sus datos para completar la asistencia.", "warning");
+            }
 
+            document.getElementById("step-search").classList.add("hidden");
+            document.getElementById("step-register").classList.remove("hidden");
+          }
+        } else {
+          showMessage("Error: " + result.message, "error");
+        }
+      } catch (error) {
+        document.getElementById("btn-buscar").disabled = false;
+        showMessage("Error al conectar con la base de datos.", "error");
+      }
+    }
+
+    // Paso 2: Registrar usuario nuevo
+    async function registrarNuevo() {
+      const nombres = document.getElementById("nombres").value.trim();
+      const apellidos = document.getElementById("apellidos").value.trim();
+      const conjunto = document.getElementById("conjunto").value.trim();
+      const telefono = document.getElementById("telefono").value.trim();
+      const correo = document.getElementById("correo").value.trim();
+
+      if (!nombres || !apellidos || !conjunto) {
+        showMessage("Por favor complete Nombres, Apellidos y seleccione un Conjunto.", "error");
+        return;
+      }
+
+      showMessage("Guardando registro y marcando asistencia...", "info");
+      document.getElementById("btn-guardar").disabled = true;
+
+      const payload = {
+        action: "registrar_nuevo",
+        dni: currentDNI,
+        nombres: nombres,
+        apellidos: apellidos,
+        conjunto: conjunto,
+        telefono: telefono,
+        correo: correo
+      };
+
+      try {
+        const response = await fetch(SCRIPT_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        document.getElementById("btn-guardar").disabled = false;
+
+        if (result.success) {
+          showResultScreen(
+            "success",
+            "¡Registro Exitoso!",
+            `¡Bienvenido/a <strong>${result.nombres} ${result.apellidos}</strong>!<br>Tus datos fueron guardados y tu asistencia fue registrada para <strong>"${result.evento.nombre}"</strong>.`
+          );
+        } else {
+          showMessage("Error: " + result.message, "error");
+        }
+      } catch (error) {
+        document.getElementById("btn-guardar").disabled = false;
+        showMessage("Error de conexión al guardar los datos.", "error");
+      }
+    }
+
+    function showResultScreen(type, title, message) {
+      clearMessage();
+      document.getElementById("step-search").classList.add("hidden");
+      document.getElementById("step-register").classList.add("hidden");
+
+      const iconDiv = document.getElementById("result-icon");
+      if (type === "success") {
+        iconDiv.innerHTML = `<svg fill="none" stroke="#10b981" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+      } else {
+        iconDiv.innerHTML = `<svg fill="none" stroke="#f59e0b" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`;
+      }
+
+      document.getElementById("result-title").textContent = title;
+      document.getElementById("result-message").innerHTML = message;
+      document.getElementById("step-result").classList.remove("hidden");
+    }
+
+    function reiniciarFormulario() {
+      currentDNI = "";
+      document.getElementById("dni").value = "";
+      document.getElementById("nombres").value = "";
+      document.getElementById("apellidos").value = "";
+      document.getElementById("telefono").value = "";
+      document.getElementById("correo").value = "";
+      document.getElementById("conjunto").selectedIndex = 0;
+
+      clearMessage();
+      document.getElementById("step-result").classList.add("hidden");
+      document.getElementById("step-register").classList.add("hidden");
+      document.getElementById("step-search").classList.remove("hidden");
+    }
+  </script>
 </body>
 </html>
