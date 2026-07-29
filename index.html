@@ -11,7 +11,7 @@
     h2 { margin-top: 0; color: #1f2937; text-align: center; }
     .form-group { margin-bottom: 15px; }
     label { display: block; margin-bottom: 5px; font-weight: 600; color: #374151; font-size: 14px; }
-    input { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 15px; }
+    input, select { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 15px; background-color: white; }
     button { width: 100%; padding: 12px; background-color: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; margin-top: 5px; }
     button:hover { background-color: #1d4ed8; }
     button:disabled { background-color: #9ca3af; cursor: not-allowed; }
@@ -40,10 +40,10 @@
     <button type="button" id="btn-buscar" onclick="buscarUsuario()">Buscar y Registrar Asistencia</button>
   </div>
 
-  <!-- Paso 2: Nuevo Registro (Si NO existe) -->
+  <!-- Paso 2: Nuevo Registro -->
   <div id="step-register" class="hidden">
     <div class="alert alert-info" style="margin-bottom:15px;">
-      El DNI no está registrado. Ingrese sus datos para completar el registro y marcar asistencia.
+      El DNI no está registrado. Complete los datos para continuar.
     </div>
     <div class="form-group">
       <label for="nombres">Nombres *</label>
@@ -52,6 +52,12 @@
     <div class="form-group">
       <label for="apellidos">Apellidos *</label>
       <input type="text" id="apellidos" required />
+    </div>
+    <div class="form-group">
+      <label for="conjunto">Conjunto *</label>
+      <select id="conjunto" required>
+        <option value="">Cargando opciones...</option>
+      </select>
     </div>
     <div class="form-group">
       <label for="telefono">Teléfono (Opcional)</label>
@@ -65,7 +71,7 @@
     <button type="button" style="background:#6b7280; margin-top:8px;" onclick="resetForm()">Volver</button>
   </div>
 
-  <!-- Paso 3: Pantalla de Registro Exitoso -->
+  <!-- Paso 3: Registro Exitoso -->
   <div id="step-success" class="hidden success-box">
     <div class="success-icon">✓</div>
     <h3 style="color: #059669; margin-bottom: 8px;">¡Registro Exitoso!</h3>
@@ -78,10 +84,35 @@
 </div>
 
 <script>
-  // REEMPLAZA ESTA URL CON TU URL DE GOOGLE APPS SCRIPT
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzlrLvR7sxYEOO6WdAFpY7GRrtpP-7XcOngIokiZHEtFU2RJP0CCAn82t-SWE67g4jX/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw7MuPXa6K5BSA1joU8D5p15lKC4cJsK39veKAO-jwjao_ZDCmQXGl8Hm9ni6fnI8PV/exec";
 
   let currentDNI = "";
+
+  // Cargar lista de conjuntos al abrir la página
+  document.addEventListener("DOMContentLoaded", cargarConjuntos);
+
+  async function cargarConjuntos() {
+    try {
+      const response = await fetch(`${SCRIPT_URL}?action=obtener_conjuntos`);
+      const result = await response.json();
+      if (result.success && result.conjuntos) {
+        poblarComboConjuntos(result.conjuntos);
+      }
+    } catch (e) {
+      console.error("Error al cargar la lista de conjuntos:", e);
+    }
+  }
+
+  function poblarComboConjuntos(lista) {
+    const select = document.getElementById("conjunto");
+    select.innerHTML = '<option value="">-- Seleccione un Conjunto --</option>';
+    lista.forEach(item => {
+      const option = document.createElement("option");
+      option.value = item;
+      option.textContent = item;
+      select.appendChild(option);
+    });
+  }
 
   async function buscarUsuario() {
     const dniInput = document.getElementById("dni").value.trim();
@@ -102,11 +133,10 @@
 
       if (result.success) {
         if (result.encontrado) {
-          // ENCONTRADO: Marcar asistencia automáticamente de inmediato
           await marcarAsistenciaDirecta(result.usuario);
         } else {
-          // NO ENCONTRADO: Mostrar formulario para registrar nuevos datos
           clearMessage();
+          if (result.conjuntos) poblarComboConjuntos(result.conjuntos);
           document.getElementById("step-search").classList.add("hidden");
           document.getElementById("step-register").classList.remove("hidden");
         }
@@ -141,11 +171,12 @@
   async function registrarNuevo() {
     const nombres = document.getElementById("nombres").value.trim();
     const apellidos = document.getElementById("apellidos").value.trim();
+    const conjunto = document.getElementById("conjunto").value.trim();
     const telefono = document.getElementById("telefono").value.trim();
     const correo = document.getElementById("correo").value.trim();
 
-    if (!nombres || !apellidos) {
-      showMessage("Por favor complete los nombres y apellidos obligatorios.", "error");
+    if (!nombres || !apellidos || !conjunto) {
+      showMessage("Por favor complete los nombres, apellidos y seleccione un Conjunto.", "error");
       return;
     }
 
@@ -157,6 +188,7 @@
       dni: currentDNI,
       nombres: nombres,
       apellidos: apellidos,
+      conjunto: conjunto,
       telefono: telefono,
       correo: correo
     };
@@ -198,6 +230,7 @@
     document.getElementById("dni").value = "";
     document.getElementById("nombres").value = "";
     document.getElementById("apellidos").value = "";
+    document.getElementById("conjunto").value = "";
     document.getElementById("telefono").value = "";
     document.getElementById("correo").value = "";
     currentDNI = "";
