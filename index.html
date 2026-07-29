@@ -4,32 +4,34 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Control de Asistencia</title>
+
+  <!-- LIBRERÍA PARA LECTOR DE CÓDIGO QR -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
   <style>
     * { 
       box-sizing: border-box; 
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
     }
 
-    /* CENTRADO PERFECTO EN MÓVIL Y COMPUTADORA */
     body { 
       background-color: #f3f4f6; 
       display: flex; 
       justify-content: center; 
       align-items: center; 
       min-height: 100vh;
-      min-height: 100dvh; /* Adaptación precisa para pantallas de celulares */
+      min-height: 100dvh;
       margin: 0; 
       padding: 16px; 
     }
 
-    /* CONTENEDOR TIPO TARJETA RESPONSIVO */
     .card { 
       background: #ffffff; 
       padding: 28px 24px; 
       border-radius: 16px; 
       box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); 
       width: 100%; 
-      max-width: 420px; /* Tamaño ideal en PC */
+      max-width: 420px; 
       margin: auto; 
     }
 
@@ -55,7 +57,7 @@
       padding: 12px; 
       border: 1px solid #d1d5db; 
       border-radius: 8px; 
-      font-size: 16px; /* Evita el zoom automático en Safari/iOS */
+      font-size: 16px; 
       background-color: white; 
       outline: none;
       transition: border-color 0.2s;
@@ -79,6 +81,8 @@
     button:disabled { background-color: #9ca3af; cursor: not-allowed; }
     .btn-success { background-color: #059669; }
     .btn-success:hover { background-color: #047857; }
+    .btn-secondary { background-color: #4b5563; }
+    .btn-secondary:hover { background-color: #374151; }
     
     .hidden { display: none; }
     .alert { padding: 12px; border-radius: 8px; margin-top: 15px; font-size: 14px; text-align: center; }
@@ -88,22 +92,62 @@
     .status-box { text-align: center; padding: 10px 5px; }
     .icon-success { font-size: 48px; color: #059669; margin-bottom: 8px; }
     .icon-warning { font-size: 48px; color: #d97706; margin-bottom: 8px; }
+
+    /* ESTILOS DEL ESCÁNER QR */
+    #reader {
+      width: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 15px;
+      border: 2px dashed #cbd5e1;
+    }
+    .divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 15px 0;
+      color: #9ca3af;
+      font-size: 13px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .divider::before { margin-right: .5em; }
+    .divider::after { margin-left: .5em; }
   </style>
 </head>
 <body>
 
 <div class="card">
   <h2>Control de Asistencia</h2>
-  <!-- Muestra el evento activo limpiamente -->
   <div id="event-badge" class="event-badge">Cargando evento activo...</div>
 
-  <!-- Paso 1: Buscar DNI -->
+  <!-- Paso 1: Buscar DNI o Escanear QR -->
   <div id="step-search">
-    <div class="form-group">
-      <label for="dni">Número de DNI</label>
-      <input type="text" id="dni" placeholder="Ingrese DNI" maxlength="8" pattern="[0-9]*" inputmode="numeric" required autofocus />
+    
+    <!-- Contenedor dinámico del escáner -->
+    <div id="qr-container" class="hidden">
+      <div id="reader"></div>
+      <button type="button" class="btn-secondary" onclick="detenerEscaner()">Cancelar Escaneo</button>
     </div>
-    <button type="button" id="btn-buscar" onclick="buscarUsuario()">Buscar y Registrar Asistencia</button>
+
+    <!-- Formulario Tradicional de DNI -->
+    <div id="dni-container">
+      <button type="button" class="btn-secondary" id="btn-qr" onclick="iniciarEscaner()" style="margin-bottom: 15px; background-color: #0f766e;">
+        📷 Escanear Código QR
+      </button>
+
+      <div class="divider">O INGRESE MANUALMENTE</div>
+
+      <div class="form-group">
+        <label for="dni">Número de DNI</label>
+        <input type="text" id="dni" placeholder="Ingrese DNI" maxlength="8" pattern="[0-9]*" inputmode="numeric" required autofocus />
+      </div>
+      <button type="button" id="btn-buscar" onclick="buscarUsuario()">Buscar y Registrar Asistencia</button>
+    </div>
+
   </div>
 
   <!-- Paso 2: Nuevo Registro -->
@@ -161,11 +205,11 @@
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4seyhhepXTXdmt0HSjM0i-rfvqQVElXmihx_6DiVRTnpG_yKNBPE7Rs6q3pBUhGvs/exec";
 
   let currentDNI = "";
+  let html5QrCode = null;
 
   document.addEventListener("DOMContentLoaded", () => {
     cargarInfoInicial();
 
-    // Permite presionar Enter en el campo DNI para enviar el formulario
     document.getElementById("dni").addEventListener("keypress", function(event) {
       if (event.key === "Enter") {
         event.preventDefault();
@@ -173,12 +217,74 @@
       }
     });
 
-    // Permite solo el ingreso de números en el campo DNI
     document.getElementById("dni").addEventListener("input", function(e) {
       this.value = this.value.replace(/[^0-9]/g, '');
     });
   });
 
+  /* ===================================================
+     LÓGICA DEL ESCÁNER DE CÓDIGO QR
+     =================================================== */
+  function iniciarEscaner() {
+    clearMessage();
+    document.getElementById("qr-container").classList.remove("hidden");
+    document.getElementById("dni-container").classList.add("hidden");
+
+    html5QrCode = new Html5Qrcode("reader");
+    
+    // Configura preferencia para la cámara trasera ('environment')
+    const config = { fps: 10, qrbox: { width: 220, height: 220 } };
+
+    html5QrCode.start(
+      { facingMode: "environment" }, 
+      config, 
+      onScanSuccess
+    ).catch(err => {
+      showMessage("No se pudo acceder a la cámara o el navegador bloqueó el permiso.", "error");
+      detenerEscaner();
+    });
+  }
+
+  function onScanSuccess(decodedText) {
+    // Limpia el texto por si el QR contiene espacios extras o caracteres no numéricos
+    let dniLimpio = decodedText.trim().replace(/[^0-9]/g, '');
+    
+    // Si el QR tiene más de 8 dígitos, extrae los primeros 8
+    if (dniLimpio.length > 8) {
+      dniLimpio = dniLimpio.substring(0, 8);
+    }
+
+    if (dniLimpio) {
+      detenerEscaner();
+      document.getElementById("dni").value = dniLimpio;
+      // Dispara automáticamente la búsqueda existente
+      buscarUsuario();
+    } else {
+      showMessage("El código QR no contiene un DNI válido.", "error");
+    }
+  }
+
+  function detenerEscaner() {
+    if (html5QrCode && html5QrCode.isScanning) {
+      html5QrCode.stop().then(() => {
+        html5QrCode.clear();
+        ocultarUIEscaner();
+      }).catch(err => {
+        ocultarUIEscaner();
+      });
+    } else {
+      ocultarUIEscaner();
+    }
+  }
+
+  function ocultarUIEscaner() {
+    document.getElementById("qr-container").classList.add("hidden");
+    document.getElementById("dni-container").classList.remove("hidden");
+  }
+
+  /* ===================================================
+     FLUJO PRINCIPAL DE ASISTENCIA (SIN CAMBIOS)
+     =================================================== */
   async function cargarInfoInicial() {
     try {
       const response = await fetch(`${SCRIPT_URL}?action=obtener_info_inicial`);
@@ -262,19 +368,20 @@
     showMessage("Guardando registro y marcando asistencia...", "info");
     document.getElementById("btn-guardar").disabled = true;
 
-    const formData = new URLSearchParams();
-    formData.append("action", "registrar_nuevo");
-    formData.append("dni", currentDNI);
-    formData.append("nombres", nombres);
-    formData.append("apellidos", apellidos);
-    formData.append("conjunto", conjunto);
-    formData.append("telefono", telefono);
-    formData.append("correo", correo);
-
+    // Envio POST optimizado para Apps Script
     try {
       const response = await fetch(SCRIPT_URL, {
         method: "POST",
-        body: formData
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "registrar_nuevo",
+          dni: currentDNI,
+          nombres: nombres,
+          apellidos: apellidos,
+          conjunto: conjunto,
+          telefono: telefono,
+          correo: correo
+        })
       });
       const result = await response.json();
 
@@ -313,6 +420,7 @@
   }
 
   function resetForm() {
+    detenerEscaner();
     hideAllSteps();
     document.getElementById("step-search").classList.remove("hidden");
 
