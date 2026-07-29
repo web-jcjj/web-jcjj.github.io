@@ -35,25 +35,15 @@
   <div id="step-search">
     <div class="form-group">
       <label for="dni">Número de DNI</label>
-      <input type="text" id="dni" placeholder="Ingrese DNI" maxlength="15" required />
+      <input type="text" id="dni" placeholder="Ingrese DNI" maxlength="15" required autofocus />
     </div>
-    <button type="button" id="btn-buscar" onclick="buscarUsuario()">Buscar DNI</button>
+    <button type="button" id="btn-buscar" onclick="buscarUsuario()">Buscar y Registrar Asistencia</button>
   </div>
 
-  <!-- Paso 2A: Usuario Encontrado -->
-  <div id="step-found" class="hidden">
-    <div class="alert alert-info">
-      <strong>¡Usuario Registrado!</strong><br>
-      <span id="found-name" style="font-size: 16px;"></span>
-    </div>
-    <button type="button" class="btn-success" onclick="confirmarAsistencia()">Marcar Asistencia</button>
-    <button type="button" style="background:#6b7280; margin-top:8px;" onclick="resetForm()">Volver</button>
-  </div>
-
-  <!-- Paso 2B: Nuevo Registro -->
+  <!-- Paso 2: Nuevo Registro (Si NO existe) -->
   <div id="step-register" class="hidden">
     <div class="alert alert-info" style="margin-bottom:15px;">
-      El DNI no está registrado. Ingrese sus datos para guardar el registro y marcar asistencia.
+      El DNI no está registrado. Ingrese sus datos para completar el registro y marcar asistencia.
     </div>
     <div class="form-group">
       <label for="nombres">Nombres *</label>
@@ -75,19 +65,20 @@
     <button type="button" style="background:#6b7280; margin-top:8px;" onclick="resetForm()">Volver</button>
   </div>
 
-  <!-- Paso 3: Mensaje de Confirmación de Éxito -->
+  <!-- Paso 3: Pantalla de Registro Exitoso -->
   <div id="step-success" class="hidden success-box">
     <div class="success-icon">✓</div>
     <h3 style="color: #059669; margin-bottom: 8px;">¡Registro Exitoso!</h3>
-    <p id="success-message-text" style="color: #374151; font-size: 15px; margin-bottom: 20px;"></p>
-    <button type="button" class="btn-success" onclick="resetForm()">Registrar Otra Asistencia</button>
+    <p id="success-message-text" style="color: #374151; font-size: 16px; margin-bottom: 20px; line-height: 1.4;"></p>
+    <button type="button" class="btn-success" onclick="resetForm()">Marcar Otra Asistencia</button>
   </div>
 
-  <!-- Mensajes de estado (cargando o errores) -->
+  <!-- Mensajes de estado -->
   <div id="status-message"></div>
 </div>
 
 <script>
+  // REEMPLAZA ESTA URL CON TU URL DE GOOGLE APPS SCRIPT
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzlrLvR7sxYEOO6WdAFpY7GRrtpP-7XcOngIokiZHEtFU2RJP0CCAn82t-SWE67g4jX/exec";
 
   let currentDNI = "";
@@ -108,14 +99,14 @@
       const result = await response.json();
 
       document.getElementById("btn-buscar").disabled = false;
-      clearMessage();
 
       if (result.success) {
         if (result.encontrado) {
-          document.getElementById("step-search").classList.add("hidden");
-          document.getElementById("step-found").classList.remove("hidden");
-          document.getElementById("found-name").innerText = `${result.usuario.nombres} ${result.usuario.apellidos}`;
+          // ENCONTRADO: Marcar asistencia automáticamente de inmediato
+          await marcarAsistenciaDirecta(result.usuario);
         } else {
+          // NO ENCONTRADO: Mostrar formulario para registrar nuevos datos
+          clearMessage();
           document.getElementById("step-search").classList.add("hidden");
           document.getElementById("step-register").classList.remove("hidden");
         }
@@ -128,22 +119,22 @@
     }
   }
 
-  async function confirmarAsistencia() {
-    showMessage("Registrando asistencia...", "info");
+  async function marcarAsistenciaDirecta(usuario) {
+    showMessage("Usuario encontrado. Registrando asistencia...", "info");
     try {
       const response = await fetch(SCRIPT_URL, {
         method: "POST",
-        body: JSON.stringify({ action: "marcar_asistencia", dni: currentDNI })
+        body: JSON.stringify({ action: "marcar_asistencia", dni: usuario.dni })
       });
       const result = await response.json();
 
       if (result.success) {
-        showSuccessScreen(result.message);
+        showSuccessScreen(`¡Bienvenido/a <strong>${usuario.nombres} ${usuario.apellidos}</strong>!<br>Tu asistencia ha sido registrada correctamente.`);
       } else {
         showMessage("Error: " + result.message, "error");
       }
     } catch (error) {
-      showMessage("Error al procesar la asistencia.", "error");
+      showMessage("Error al registrar la asistencia.", "error");
     }
   }
 
@@ -180,7 +171,7 @@
       document.getElementById("btn-guardar").disabled = false;
 
       if (result.success) {
-        showSuccessScreen(`Se registraron los datos de ${nombres} ${apellidos} (DNI: ${currentDNI}) y se marcó su asistencia correctamente.`);
+        showSuccessScreen(`¡Bienvenido/a <strong>${nombres} ${apellidos}</strong>!<br>Tus datos fueron guardados y tu asistencia ha sido registrada correctamente.`);
       } else {
         showMessage("Error: " + result.message, "error");
       }
@@ -190,19 +181,17 @@
     }
   }
 
-  function showSuccessScreen(text) {
+  function showSuccessScreen(textHTML) {
     clearMessage();
     document.getElementById("step-search").classList.add("hidden");
-    document.getElementById("step-found").classList.add("hidden");
     document.getElementById("step-register").classList.add("hidden");
     
-    document.getElementById("success-message-text").innerText = text;
+    document.getElementById("success-message-text").innerHTML = textHTML;
     document.getElementById("step-success").classList.remove("hidden");
   }
 
   function resetForm() {
     document.getElementById("step-search").classList.remove("hidden");
-    document.getElementById("step-found").classList.add("hidden");
     document.getElementById("step-register").classList.add("hidden");
     document.getElementById("step-success").classList.add("hidden");
 
@@ -213,6 +202,7 @@
     document.getElementById("correo").value = "";
     currentDNI = "";
     clearMessage();
+    document.getElementById("dni").focus();
   }
 
   function showMessage(msg, type) {
