@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Control de Asistencia</title>
+  <title>Control de Asistencia por Evento</title>
   <style>
     * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     body { background-color: #f3f4f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
     .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 480px; }
-    h2 { margin-top: 0; color: #1f2937; text-align: center; }
+    h2 { margin-top: 0; color: #1f2937; text-align: center; margin-bottom: 5px; }
+    .event-badge { background-color: #e0e7ff; color: #3730a3; padding: 8px 12px; border-radius: 20px; font-size: 13px; text-align: center; font-weight: 600; margin-bottom: 20px; border: 1px solid #c7d2fe; }
     .form-group { margin-bottom: 15px; }
     label { display: block; margin-bottom: 5px; font-weight: 600; color: #374151; font-size: 14px; }
     input, select { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 15px; background-color: white; }
@@ -19,17 +20,20 @@
     .btn-success:hover { background-color: #047857; }
     .hidden { display: none; }
     .alert { padding: 12px; border-radius: 6px; margin-top: 15px; font-size: 14px; text-align: center; }
-    .alert-success { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
     .alert-error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
     .alert-info { background-color: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
-    .success-box { text-align: center; padding: 20px 10px; }
-    .success-icon { font-size: 50px; color: #059669; margin-bottom: 10px; }
+    
+    /* Cajas de Estado Final */
+    .status-box { text-align: center; padding: 20px 10px; }
+    .icon-success { font-size: 50px; color: #059669; margin-bottom: 10px; }
+    .icon-warning { font-size: 50px; color: #d97706; margin-bottom: 10px; }
   </style>
 </head>
 <body>
 
 <div class="card">
   <h2>Control de Asistencia</h2>
+  <div id="event-badge" class="event-badge">Cargando evento activo...</div>
 
   <!-- Paso 1: Buscar DNI -->
   <div id="step-search">
@@ -43,7 +47,7 @@
   <!-- Paso 2: Nuevo Registro -->
   <div id="step-register" class="hidden">
     <div class="alert alert-info" style="margin-bottom:15px;">
-      El DNI no está registrado. Complete los datos para continuar.
+      El DNI no está registrado. Ingrese sus datos para completar el registro.
     </div>
     <div class="form-group">
       <label for="nombres">Nombres *</label>
@@ -71,12 +75,20 @@
     <button type="button" style="background:#6b7280; margin-top:8px;" onclick="resetForm()">Volver</button>
   </div>
 
-  <!-- Paso 3: Registro Exitoso -->
-  <div id="step-success" class="hidden success-box">
-    <div class="success-icon">✓</div>
-    <h3 style="color: #059669; margin-bottom: 8px;">¡Registro Exitoso!</h3>
-    <p id="success-message-text" style="color: #374151; font-size: 16px; margin-bottom: 20px; line-height: 1.4;"></p>
-    <button type="button" class="btn-success" onclick="resetForm()">Marcar Otra Asistencia</button>
+  <!-- Paso 3A: Pantalla de Registro Exitoso -->
+  <div id="step-success" class="hidden status-box">
+    <div class="icon-success">✓</div>
+    <h3 style="color: #059669; margin-bottom: 8px;">¡Asistencia Registrada!</h3>
+    <p id="success-message-text" style="color: #374151; font-size: 15px; margin-bottom: 20px; line-height: 1.4;"></p>
+    <button type="button" class="btn-success" onclick="resetForm()">Registrar Otra Asistencia</button>
+  </div>
+
+  <!-- Paso 3B: Pantalla de Ya Registrado (Duplicado en el mismo evento) -->
+  <div id="step-warning" class="hidden status-box">
+    <div class="icon-warning">⚠️</div>
+    <h3 style="color: #d97706; margin-bottom: 8px;">¡Asistencia Ya Registrada!</h3>
+    <p id="warning-message-text" style="color: #374151; font-size: 15px; margin-bottom: 20px; line-height: 1.4;"></p>
+    <button type="button" style="background:#2563eb;" onclick="resetForm()">Entendido / Volver</button>
   </div>
 
   <!-- Mensajes de estado -->
@@ -84,22 +96,30 @@
 </div>
 
 <script>
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw7MuPXa6K5BSA1joU8D5p15lKC4cJsK39veKAO-jwjao_ZDCmQXGl8Hm9ni6fnI8PV/exec";
+  // REEMPLAZA ESTA URL CON LA TUYA DE APPS SCRIPT
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxqAxJ6uTJQNB1Ftcj7hyoTW4cQbp8-wAUrvI__4FlgNyIL5TyI9pVqZVdo-9Z5rA8p/exec";
 
   let currentDNI = "";
 
-  // Cargar lista de conjuntos al abrir la página
-  document.addEventListener("DOMContentLoaded", cargarConjuntos);
+  document.addEventListener("DOMContentLoaded", cargarInfoInicial);
 
-  async function cargarConjuntos() {
+  async function cargarInfoInicial() {
     try {
-      const response = await fetch(`${SCRIPT_URL}?action=obtener_conjuntos`);
+      const response = await fetch(`${SCRIPT_URL}?action=obtener_info_inicial`);
       const result = await response.json();
-      if (result.success && result.conjuntos) {
-        poblarComboConjuntos(result.conjuntos);
+      
+      if (result.success) {
+        if (result.evento) {
+          document.getElementById("event-badge").innerText = `Evento: ${result.evento.nombre} (${result.evento.fecha})`;
+        } else {
+          document.getElementById("event-badge").innerText = "⚠️ No hay eventos activos";
+        }
+        if (result.conjuntos) {
+          poblarComboConjuntos(result.conjuntos);
+        }
       }
     } catch (e) {
-      console.error("Error al cargar la lista de conjuntos:", e);
+      document.getElementById("event-badge").innerText = "Error al cargar evento";
     }
   }
 
@@ -122,7 +142,7 @@
     }
 
     currentDNI = dniInput;
-    showMessage("Buscando en la base de datos...", "info");
+    showMessage("Validando información...", "info");
     document.getElementById("btn-buscar").disabled = true;
 
     try {
@@ -132,9 +152,14 @@
       document.getElementById("btn-buscar").disabled = false;
 
       if (result.success) {
-        if (result.encontrado) {
-          await marcarAsistenciaDirecta(result.usuario);
+        if (result.yaRegistradoEnEvento) {
+          // YA REGISTRÓ EN ESTE EVENTO
+          showWarningScreen(`El DNI <strong>${currentDNI}</strong> ya registró asistencia para el evento <strong>"${result.evento.nombre}"</strong> el día ${result.fechaHoraAnterior}.`);
+        } else if (result.encontrado && result.asistenciaMarcada) {
+          // ENCONTRADO Y ASISTENCIA MARCADA
+          showSuccessScreen(`¡Bienvenido/a <strong>${result.usuario.nombres} ${result.usuario.apellidos}</strong>!<br>Tu asistencia ha sido registrada para el evento <strong>"${result.evento.nombre}"</strong>.`);
         } else {
+          // NUEVO USUARIO
           clearMessage();
           if (result.conjuntos) poblarComboConjuntos(result.conjuntos);
           document.getElementById("step-search").classList.add("hidden");
@@ -149,25 +174,6 @@
     }
   }
 
-  async function marcarAsistenciaDirecta(usuario) {
-    showMessage("Usuario encontrado. Registrando asistencia...", "info");
-    try {
-      const response = await fetch(SCRIPT_URL, {
-        method: "POST",
-        body: JSON.stringify({ action: "marcar_asistencia", dni: usuario.dni })
-      });
-      const result = await response.json();
-
-      if (result.success) {
-        showSuccessScreen(`¡Bienvenido/a <strong>${usuario.nombres} ${usuario.apellidos}</strong>!<br>Tu asistencia ha sido registrada correctamente.`);
-      } else {
-        showMessage("Error: " + result.message, "error");
-      }
-    } catch (error) {
-      showMessage("Error al registrar la asistencia.", "error");
-    }
-  }
-
   async function registrarNuevo() {
     const nombres = document.getElementById("nombres").value.trim();
     const apellidos = document.getElementById("apellidos").value.trim();
@@ -176,7 +182,7 @@
     const correo = document.getElementById("correo").value.trim();
 
     if (!nombres || !apellidos || !conjunto) {
-      showMessage("Por favor complete los nombres, apellidos y seleccione un Conjunto.", "error");
+      showMessage("Por favor complete Nombres, Apellidos y seleccione un Conjunto.", "error");
       return;
     }
 
@@ -203,29 +209,40 @@
       document.getElementById("btn-guardar").disabled = false;
 
       if (result.success) {
-        showSuccessScreen(`¡Bienvenido/a <strong>${nombres} ${apellidos}</strong>!<br>Tus datos fueron guardados y tu asistencia ha sido registrada correctamente.`);
+        showSuccessScreen(`¡Bienvenido/a <strong>${result.nombres} ${result.apellidos}</strong>!<br>Tus datos fueron guardados y tu asistencia fue marcada para el evento <strong>"${result.evento.nombre}"</strong>.`);
       } else {
         showMessage("Error: " + result.message, "error");
       }
     } catch (error) {
       document.getElementById("btn-guardar").disabled = false;
-      showMessage("Error de conexión al registrar los datos.", "error");
+      showMessage("Error de conexión al guardar los datos.", "error");
     }
   }
 
-  function showSuccessScreen(textHTML) {
+  function showSuccessScreen(htmlText) {
     clearMessage();
-    document.getElementById("step-search").classList.add("hidden");
-    document.getElementById("step-register").classList.add("hidden");
-    
-    document.getElementById("success-message-text").innerHTML = textHTML;
+    hideAllSteps();
+    document.getElementById("success-message-text").innerHTML = htmlText;
     document.getElementById("step-success").classList.remove("hidden");
   }
 
-  function resetForm() {
-    document.getElementById("step-search").classList.remove("hidden");
+  function showWarningScreen(htmlText) {
+    clearMessage();
+    hideAllSteps();
+    document.getElementById("warning-message-text").innerHTML = htmlText;
+    document.getElementById("step-warning").classList.remove("hidden");
+  }
+
+  function hideAllSteps() {
+    document.getElementById("step-search").classList.add("hidden");
     document.getElementById("step-register").classList.add("hidden");
     document.getElementById("step-success").classList.add("hidden");
+    document.getElementById("step-warning").classList.add("hidden");
+  }
+
+  function resetForm() {
+    hideAllSteps();
+    document.getElementById("step-search").classList.remove("hidden");
 
     document.getElementById("dni").value = "";
     document.getElementById("nombres").value = "";
