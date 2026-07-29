@@ -22,6 +22,8 @@
     .alert-success { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
     .alert-error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
     .alert-info { background-color: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
+    .success-box { text-align: center; padding: 20px 10px; }
+    .success-icon { font-size: 50px; color: #059669; margin-bottom: 10px; }
   </style>
 </head>
 <body>
@@ -51,14 +53,14 @@
   <!-- Paso 2B: Nuevo Registro -->
   <div id="step-register" class="hidden">
     <div class="alert alert-info" style="margin-bottom:15px;">
-      El DNI no está registrado. Ingrese sus datos para completar el registro y marcar asistencia.
+      El DNI no está registrado. Ingrese sus datos para guardar el registro y marcar asistencia.
     </div>
     <div class="form-group">
-      <label for="nombres">Nombres</label>
+      <label for="nombres">Nombres *</label>
       <input type="text" id="nombres" required />
     </div>
     <div class="form-group">
-      <label for="apellidos">Apellidos</label>
+      <label for="apellidos">Apellidos *</label>
       <input type="text" id="apellidos" required />
     </div>
     <div class="form-group">
@@ -69,16 +71,23 @@
       <label for="correo">Correo (Opcional)</label>
       <input type="email" id="correo" />
     </div>
-    <button type="button" class="btn-success" onclick="registrarNuevo()">Guardar y Marcar Asistencia</button>
+    <button type="button" class="btn-success" id="btn-guardar" onclick="registrarNuevo()">Guardar y Marcar Asistencia</button>
     <button type="button" style="background:#6b7280; margin-top:8px;" onclick="resetForm()">Volver</button>
   </div>
 
-  <!-- Mensajes de estado -->
+  <!-- Paso 3: Mensaje de Confirmación de Éxito -->
+  <div id="step-success" class="hidden success-box">
+    <div class="success-icon">✓</div>
+    <h3 style="color: #059669; margin-bottom: 8px;">¡Registro Exitoso!</h3>
+    <p id="success-message-text" style="color: #374151; font-size: 15px; margin-bottom: 20px;"></p>
+    <button type="button" class="btn-success" onclick="resetForm()">Registrar Otra Asistencia</button>
+  </div>
+
+  <!-- Mensajes de estado (cargando o errores) -->
   <div id="status-message"></div>
 </div>
 
 <script>
-  // PEGA AQUÍ LA URL QUE OBTUVISTE AL PUBLICAR EL APPS SCRIPT
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzlrLvR7sxYEOO6WdAFpY7GRrtpP-7XcOngIokiZHEtFU2RJP0CCAn82t-SWE67g4jX/exec";
 
   let currentDNI = "";
@@ -116,7 +125,6 @@
     } catch (error) {
       document.getElementById("btn-buscar").disabled = false;
       showMessage("Error al conectar con la base de datos.", "error");
-      console.error(error);
     }
   }
 
@@ -130,8 +138,7 @@
       const result = await response.json();
 
       if (result.success) {
-        showMessage(result.message, "success");
-        setTimeout(resetForm, 3000);
+        showSuccessScreen(result.message);
       } else {
         showMessage("Error: " + result.message, "error");
       }
@@ -147,11 +154,12 @@
     const correo = document.getElementById("correo").value.trim();
 
     if (!nombres || !apellidos) {
-      showMessage("Por favor complete los nombres y apellidos.", "error");
+      showMessage("Por favor complete los nombres y apellidos obligatorios.", "error");
       return;
     }
 
-    showMessage("Guardando nuevo registro...", "info");
+    showMessage("Guardando registro y marcando asistencia...", "info");
+    document.getElementById("btn-guardar").disabled = true;
 
     const payload = {
       action: "registrar_nuevo",
@@ -169,21 +177,35 @@
       });
       const result = await response.json();
 
+      document.getElementById("btn-guardar").disabled = false;
+
       if (result.success) {
-        showMessage(result.message, "success");
-        setTimeout(resetForm, 3000);
+        showSuccessScreen(`Se registraron los datos de ${nombres} ${apellidos} (DNI: ${currentDNI}) y se marcó su asistencia correctamente.`);
       } else {
         showMessage("Error: " + result.message, "error");
       }
     } catch (error) {
+      document.getElementById("btn-guardar").disabled = false;
       showMessage("Error de conexión al registrar los datos.", "error");
     }
+  }
+
+  function showSuccessScreen(text) {
+    clearMessage();
+    document.getElementById("step-search").classList.add("hidden");
+    document.getElementById("step-found").classList.add("hidden");
+    document.getElementById("step-register").classList.add("hidden");
+    
+    document.getElementById("success-message-text").innerText = text;
+    document.getElementById("step-success").classList.remove("hidden");
   }
 
   function resetForm() {
     document.getElementById("step-search").classList.remove("hidden");
     document.getElementById("step-found").classList.add("hidden");
     document.getElementById("step-register").classList.add("hidden");
+    document.getElementById("step-success").classList.add("hidden");
+
     document.getElementById("dni").value = "";
     document.getElementById("nombres").value = "";
     document.getElementById("apellidos").value = "";
