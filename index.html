@@ -39,7 +39,7 @@
   <div id="step-search">
     <div class="form-group">
       <label for="dni">Número de DNI</label>
-      <input type="text" id="dni" placeholder="Ingrese DNI" maxlength="15" required autofocus />
+      <input type="text" id="dni" placeholder="Ingrese DNI" maxlength="8" pattern="[0-9]*" inputmode="numeric" required autofocus />
     </div>
     <button type="button" id="btn-buscar" onclick="buscarUsuario()">Buscar y Registrar Asistencia</button>
   </div>
@@ -100,7 +100,22 @@
 
   let currentDNI = "";
 
-  document.addEventListener("DOMContentLoaded", cargarInfoInicial);
+  document.addEventListener("DOMContentLoaded", () => {
+    cargarInfoInicial();
+
+    // Permite presionar Enter en el campo DNI para enviar el formulario
+    document.getElementById("dni").addEventListener("keypress", function(event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        buscarUsuario();
+      }
+    });
+
+    // Permite solo el ingreso de números en el campo DNI
+    document.getElementById("dni").addEventListener("input", function(e) {
+      this.value = this.value.replace(/[^0-9]/g, '');
+    });
+  });
 
   async function cargarInfoInicial() {
     try {
@@ -109,7 +124,6 @@
       
       if (result.success) {
         if (result.evento) {
-          // MUESTRA LIMPIAMENTE EL NOMBRE DEL EVENTO ACTIVO
           document.getElementById("event-badge").innerText = `Evento Activo: ${result.evento.nombre}`;
         } else {
           document.getElementById("event-badge").innerText = "⚠️ No hay eventos activos";
@@ -186,20 +200,20 @@
     showMessage("Guardando registro y marcando asistencia...", "info");
     document.getElementById("btn-guardar").disabled = true;
 
-    const payload = {
-      action: "registrar_nuevo",
-      dni: currentDNI,
-      nombres: nombres,
-      apellidos: apellidos,
-      conjunto: conjunto,
-      telefono: telefono,
-      correo: correo
-    };
+    // Configurar envío optimizado para Google Apps Script
+    const formData = new URLSearchParams();
+    formData.append("action", "registrar_nuevo");
+    formData.append("dni", currentDNI);
+    formData.append("nombres", nombres);
+    formData.append("apellidos", apellidos);
+    formData.append("conjunto", conjunto);
+    formData.append("telefono", telefono);
+    formData.append("correo", correo);
 
     try {
       const response = await fetch(SCRIPT_URL, {
         method: "POST",
-        body: JSON.stringify(payload)
+        body: formData
       });
       const result = await response.json();
 
