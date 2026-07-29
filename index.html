@@ -9,7 +9,21 @@
     body { background-color: #f3f4f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
     .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 480px; }
     h2 { margin-top: 0; color: #1f2937; text-align: center; margin-bottom: 5px; }
-    .event-badge { background-color: #059669; color: white; padding: 10px 14px; border-radius: 8px; font-size: 14px; text-align: center; font-weight: bold; margin-bottom: 20px; }
+    
+    /* ESTILO ACTUALIZADO: Apariencia de mensaje informativo fijo */
+    .event-badge { 
+      background-color: #ecfdf5; 
+      color: #065f46; 
+      border: 1px solid #a7f3d0; 
+      padding: 12px 14px; 
+      border-radius: 8px; 
+      font-size: 14px; 
+      text-align: center; 
+      font-weight: 600; 
+      margin-bottom: 20px; 
+      cursor: default;
+    }
+    
     .form-group { margin-bottom: 15px; }
     label { display: block; margin-bottom: 5px; font-weight: 600; color: #374151; font-size: 14px; }
     input, select { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 15px; background-color: white; }
@@ -124,9 +138,9 @@
       
       if (result.success) {
         if (result.evento) {
-          document.getElementById("event-badge").innerText = `Evento Activo: ${result.evento.nombre}`;
+          document.getElementById("event-badge").innerHTML = `📍 <strong>Evento Activo:</strong> ${result.evento.nombre}`;
         } else {
-          document.getElementById("event-badge").innerText = "⚠️ No hay eventos activos";
+          document.getElementById("event-badge").innerHTML = "⚠️ <strong>No hay eventos activos</strong>";
         }
         if (result.conjuntos) {
           poblarComboConjuntos(result.conjuntos);
