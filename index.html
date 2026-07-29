@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Asistencia</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f3f4f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+    .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 480px; }
+    h2 { margin-top: 0; color: #1f2937; text-align: center; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: 600; color: #374151; font-size: 14px; }
+    input { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 15px; }
+    button { width: 100%; padding: 12px; background-color: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; margin-top: 5px; }
+    button:hover { background-color: #1d4ed8; }
+    button:disabled { background-color: #9ca3af; cursor: not-allowed; }
+    .btn-success { background-color: #059669; }
+    .btn-success:hover { background-color: #047857; }
+    .hidden { display: none; }
+    .alert { padding: 12px; border-radius: 6px; margin-top: 15px; font-size: 14px; text-align: center; }
+    .alert-success { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+    .alert-error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .alert-info { background-color: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>Control de Asistencia</h2>
+
+  <!-- Paso 1: Buscar DNI -->
+  <div id="step-search">
+    <div class="form-group">
+      <label for="dni">Número de DNI</label>
+      <input type="text" id="dni" placeholder="Ingrese DNI" maxlength="15" required />
+    </div>
+    <button type="button" id="btn-buscar" onclick="buscarUsuario()">Buscar DNI</button>
+  </div>
+
+  <!-- Paso 2A: Usuario Encontrado -->
+  <div id="step-found" class="hidden">
+    <div class="alert alert-info">
+      <strong>¡Usuario Registrado!</strong><br>
+      <span id="found-name" style="font-size: 16px;"></span>
+    </div>
+    <button type="button" class="btn-success" onclick="confirmarAsistencia()">Marcar Asistencia</button>
+    <button type="button" style="background:#6b7280; margin-top:8px;" onclick="resetForm()">Volver</button>
+  </div>
+
+  <!-- Paso 2B: Nuevo Registro -->
+  <div id="step-register" class="hidden">
+    <div class="alert alert-info" style="margin-bottom:15px;">
+      El DNI no está registrado. Ingrese sus datos para completar el registro y marcar asistencia.
+    </div>
+    <div class="form-group">
+      <label for="nombres">Nombres</label>
+      <input type="text" id="nombres" required />
+    </div>
+    <div class="form-group">
+      <label for="apellidos">Apellidos</label>
+      <input type="text" id="apellidos" required />
+    </div>
+    <div class="form-group">
+      <label for="telefono">Teléfono (Opcional)</label>
+      <input type="tel" id="telefono" />
+    </div>
+    <div class="form-group">
+      <label for="correo">Correo (Opcional)</label>
+      <input type="email" id="correo" />
+    </div>
+    <button type="button" class="btn-success" onclick="registrarNuevo()">Guardar y Marcar Asistencia</button>
+    <button type="button" style="background:#6b7280; margin-top:8px;" onclick="resetForm()">Volver</button>
+  </div>
+
+  <!-- Mensajes de estado -->
+  <div id="status-message"></div>
+</div>
+
+<script>
+  // PEGA AQUÍ LA URL QUE OBTUVISTE AL PUBLICAR EL APPS SCRIPT
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzlrLvR7sxYEOO6WdAFpY7GRrtpP-7XcOngIokiZHEtFU2RJP0CCAn82t-SWE67g4jX/exec";
+
+  let currentDNI = "";
+
+  async function buscarUsuario() {
+    const dniInput = document.getElementById("dni").value.trim();
+    if (!dniInput) {
+      showMessage("Ingrese un número de DNI", "error");
+      return;
+    }
+
+    currentDNI = dniInput;
+    showMessage("Buscando en la base de datos...", "info");
+    document.getElementById("btn-buscar").disabled = true;
+
+    try {
+      const response = await fetch(`${SCRIPT_URL}?action=buscar&dni=${encodeURIComponent(dniInput)}`);
+      const result = await response.json();
+
+      document.getElementById("btn-buscar").disabled = false;
+      clearMessage();
+
+      if (result.success) {
+        if (result.encontrado) {
+          document.getElementById("step-search").classList.add("hidden");
+          document.getElementById("step-found").classList.remove("hidden");
+          document.getElementById("found-name").innerText = `${result.usuario.nombres} ${result.usuario.apellidos}`;
+        } else {
+          document.getElementById("step-search").classList.add("hidden");
+          document.getElementById("step-register").classList.remove("hidden");
+        }
+      } else {
+        showMessage("Error: " + result.message, "error");
+      }
+    } catch (error) {
+      document.getElementById("btn-buscar").disabled = false;
+      showMessage("Error al conectar con la base de datos.", "error");
+      console.error(error);
+    }
+  }
+
+  async function confirmarAsistencia() {
+    showMessage("Registrando asistencia...", "info");
+    try {
+      const response = await fetch(SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: "marcar_asistencia", dni: currentDNI })
+      });
+      const result = await response.json();
+
+      if (result.success) {
+        showMessage(result.message, "success");
+        setTimeout(resetForm, 3000);
+      } else {
+        showMessage("Error: " + result.message, "error");
+      }
+    } catch (error) {
+      showMessage("Error al procesar la asistencia.", "error");
+    }
+  }
+
+  async function registrarNuevo() {
+    const nombres = document.getElementById("nombres").value.trim();
+    const apellidos = document.getElementById("apellidos").value.trim();
+    const telefono = document.getElementById("telefono").value.trim();
+    const correo = document.getElementById("correo").value.trim();
+
+    if (!nombres || !apellidos) {
+      showMessage("Por favor complete los nombres y apellidos.", "error");
+      return;
+    }
+
+    showMessage("Guardando nuevo registro...", "info");
+
+    const payload = {
+      action: "registrar_nuevo",
+      dni: currentDNI,
+      nombres: nombres,
+      apellidos: apellidos,
+      telefono: telefono,
+      correo: correo
+    };
+
+    try {
+      const response = await fetch(SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      const result = await response.json();
+
+      if (result.success) {
+        showMessage(result.message, "success");
+        setTimeout(resetForm, 3000);
+      } else {
+        showMessage("Error: " + result.message, "error");
+      }
+    } catch (error) {
+      showMessage("Error de conexión al registrar los datos.", "error");
+    }
+  }
+
+  function resetForm() {
+    document.getElementById("step-search").classList.remove("hidden");
+    document.getElementById("step-found").classList.add("hidden");
+    document.getElementById("step-register").classList.add("hidden");
+    document.getElementById("dni").value = "";
+    document.getElementById("nombres").value = "";
+    document.getElementById("apellidos").value = "";
+    document.getElementById("telefono").value = "";
+    document.getElementById("correo").value = "";
+    currentDNI = "";
+    clearMessage();
+  }
+
+  function showMessage(msg, type) {
+    const container = document.getElementById("status-message");
+    container.className = `alert alert-${type}`;
+    container.innerText = msg;
+  }
+
+  function clearMessage() {
+    const container = document.getElementById("status-message");
+    container.className = "";
+    container.innerText = "";
+  }
+</script>
+
+</body>
+</html>
