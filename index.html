@@ -2,15 +2,39 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Control de Asistencia</title>
   <style>
-    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: #f3f4f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
-    .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 480px; }
-    h2 { margin-top: 0; color: #1f2937; text-align: center; margin-bottom: 5px; }
+    * { 
+      box-sizing: border-box; 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    }
+
+    /* CENTRADO PERFECTO EN MÓVIL Y COMPUTADORA */
+    body { 
+      background-color: #f3f4f6; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      min-height: 100vh;
+      min-height: 100dvh; /* Adaptación precisa para pantallas de celulares */
+      margin: 0; 
+      padding: 16px; 
+    }
+
+    /* CONTENEDOR TIPO TARJETA RESPONSIVO */
+    .card { 
+      background: #ffffff; 
+      padding: 28px 24px; 
+      border-radius: 16px; 
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); 
+      width: 100%; 
+      max-width: 420px; /* Tamaño ideal en PC */
+      margin: auto; 
+    }
+
+    h2 { margin-top: 0; color: #1f2937; text-align: center; margin-bottom: 12px; font-size: 22px; }
     
-    /* ESTILO ACTUALIZADO: Apariencia de mensaje informativo fijo */
     .event-badge { 
       background-color: #ecfdf5; 
       color: #065f46; 
@@ -25,21 +49,45 @@
     }
     
     .form-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 5px; font-weight: 600; color: #374151; font-size: 14px; }
-    input, select { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 15px; background-color: white; }
-    button { width: 100%; padding: 12px; background-color: #2563eb; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; margin-top: 5px; }
+    label { display: block; margin-bottom: 6px; font-weight: 600; color: #374151; font-size: 14px; }
+    input, select { 
+      width: 100%; 
+      padding: 12px; 
+      border: 1px solid #d1d5db; 
+      border-radius: 8px; 
+      font-size: 16px; /* Evita el zoom automático en Safari/iOS */
+      background-color: white; 
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus { border-color: #2563eb; }
+
+    button { 
+      width: 100%; 
+      padding: 13px; 
+      background-color: #2563eb; 
+      color: white; 
+      border: none; 
+      border-radius: 8px; 
+      font-weight: bold; 
+      cursor: pointer; 
+      font-size: 15px; 
+      margin-top: 5px; 
+      transition: background-color 0.2s;
+    }
     button:hover { background-color: #1d4ed8; }
     button:disabled { background-color: #9ca3af; cursor: not-allowed; }
     .btn-success { background-color: #059669; }
     .btn-success:hover { background-color: #047857; }
+    
     .hidden { display: none; }
-    .alert { padding: 12px; border-radius: 6px; margin-top: 15px; font-size: 14px; text-align: center; }
+    .alert { padding: 12px; border-radius: 8px; margin-top: 15px; font-size: 14px; text-align: center; }
     .alert-error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
     .alert-info { background-color: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
     
-    .status-box { text-align: center; padding: 20px 10px; }
-    .icon-success { font-size: 50px; color: #059669; margin-bottom: 10px; }
-    .icon-warning { font-size: 50px; color: #d97706; margin-bottom: 10px; }
+    .status-box { text-align: center; padding: 10px 5px; }
+    .icon-success { font-size: 48px; color: #059669; margin-bottom: 8px; }
+    .icon-warning { font-size: 48px; color: #d97706; margin-bottom: 8px; }
   </style>
 </head>
 <body>
@@ -214,7 +262,6 @@
     showMessage("Guardando registro y marcando asistencia...", "info");
     document.getElementById("btn-guardar").disabled = true;
 
-    // Configurar envío optimizado para Google Apps Script
     const formData = new URLSearchParams();
     formData.append("action", "registrar_nuevo");
     formData.append("dni", currentDNI);
