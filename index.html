@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Control de Asistencia por Evento</title>
+  <title>Control de Asistencia</title>
   <style>
     * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     body { background-color: #f3f4f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
     .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 480px; }
     h2 { margin-top: 0; color: #1f2937; text-align: center; margin-bottom: 5px; }
-    .event-badge { background-color: #e0e7ff; color: #3730a3; padding: 8px 12px; border-radius: 20px; font-size: 13px; text-align: center; font-weight: 600; margin-bottom: 20px; border: 1px solid #c7d2fe; }
+    .event-badge { background-color: #059669; color: white; padding: 10px 14px; border-radius: 8px; font-size: 14px; text-align: center; font-weight: bold; margin-bottom: 20px; }
     .form-group { margin-bottom: 15px; }
     label { display: block; margin-bottom: 5px; font-weight: 600; color: #374151; font-size: 14px; }
     input, select { width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 15px; background-color: white; }
@@ -23,7 +23,6 @@
     .alert-error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
     .alert-info { background-color: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
     
-    /* Cajas de Estado Final */
     .status-box { text-align: center; padding: 20px 10px; }
     .icon-success { font-size: 50px; color: #059669; margin-bottom: 10px; }
     .icon-warning { font-size: 50px; color: #d97706; margin-bottom: 10px; }
@@ -33,6 +32,7 @@
 
 <div class="card">
   <h2>Control de Asistencia</h2>
+  <!-- Muestra el evento activo limpiamente -->
   <div id="event-badge" class="event-badge">Cargando evento activo...</div>
 
   <!-- Paso 1: Buscar DNI -->
@@ -75,7 +75,7 @@
     <button type="button" style="background:#6b7280; margin-top:8px;" onclick="resetForm()">Volver</button>
   </div>
 
-  <!-- Paso 3A: Pantalla de Registro Exitoso -->
+  <!-- Paso 3A: Registro Exitoso -->
   <div id="step-success" class="hidden status-box">
     <div class="icon-success">✓</div>
     <h3 style="color: #059669; margin-bottom: 8px;">¡Asistencia Registrada!</h3>
@@ -83,7 +83,7 @@
     <button type="button" class="btn-success" onclick="resetForm()">Registrar Otra Asistencia</button>
   </div>
 
-  <!-- Paso 3B: Pantalla de Ya Registrado (Duplicado en el mismo evento) -->
+  <!-- Paso 3B: Ya Registrado previamente -->
   <div id="step-warning" class="hidden status-box">
     <div class="icon-warning">⚠️</div>
     <h3 style="color: #d97706; margin-bottom: 8px;">¡Asistencia Ya Registrada!</h3>
@@ -96,8 +96,7 @@
 </div>
 
 <script>
-  // REEMPLAZA ESTA URL CON LA TUYA DE APPS SCRIPT
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxqAxJ6uTJQNB1Ftcj7hyoTW4cQbp8-wAUrvI__4FlgNyIL5TyI9pVqZVdo-9Z5rA8p/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzC2YOWkLIBYojLarWOCEIeSdHuw2m8Wy0OKLJ69idr98lLve8rW6cHUL-kZWwUniwz/exec";
 
   let currentDNI = "";
 
@@ -110,7 +109,8 @@
       
       if (result.success) {
         if (result.evento) {
-          document.getElementById("event-badge").innerText = `Evento: ${result.evento.nombre} (${result.evento.fecha})`;
+          // MUESTRA LIMPIAMENTE EL NOMBRE DEL EVENTO ACTIVO
+          document.getElementById("event-badge").innerText = `Evento Activo: ${result.evento.nombre}`;
         } else {
           document.getElementById("event-badge").innerText = "⚠️ No hay eventos activos";
         }
@@ -119,7 +119,7 @@
         }
       }
     } catch (e) {
-      document.getElementById("event-badge").innerText = "Error al cargar evento";
+      document.getElementById("event-badge").innerText = "Error al cargar el evento";
     }
   }
 
@@ -153,13 +153,10 @@
 
       if (result.success) {
         if (result.yaRegistradoEnEvento) {
-          // YA REGISTRÓ EN ESTE EVENTO
-          showWarningScreen(`El DNI <strong>${currentDNI}</strong> ya registró asistencia para el evento <strong>"${result.evento.nombre}"</strong> el día ${result.fechaHoraAnterior}.`);
+          showWarningScreen(`El DNI <strong>${currentDNI}</strong> ya registró asistencia previamente para el evento <strong>"${result.evento.nombre}"</strong>.`);
         } else if (result.encontrado && result.asistenciaMarcada) {
-          // ENCONTRADO Y ASISTENCIA MARCADA
-          showSuccessScreen(`¡Bienvenido/a <strong>${result.usuario.nombres} ${result.usuario.apellidos}</strong>!<br>Tu asistencia ha sido registrada para el evento <strong>"${result.evento.nombre}"</strong>.`);
+          showSuccessScreen(`¡Bienvenido/a <strong>${result.usuario.nombres} ${result.usuario.apellidos}</strong>!<br>Tu asistencia ha sido registrada para <strong>"${result.evento.nombre}"</strong>.`);
         } else {
-          // NUEVO USUARIO
           clearMessage();
           if (result.conjuntos) poblarComboConjuntos(result.conjuntos);
           document.getElementById("step-search").classList.add("hidden");
@@ -209,7 +206,7 @@
       document.getElementById("btn-guardar").disabled = false;
 
       if (result.success) {
-        showSuccessScreen(`¡Bienvenido/a <strong>${result.nombres} ${result.apellidos}</strong>!<br>Tus datos fueron guardados y tu asistencia fue marcada para el evento <strong>"${result.evento.nombre}"</strong>.`);
+        showSuccessScreen(`¡Bienvenido/a <strong>${result.nombres} ${result.apellidos}</strong>!<br>Tus datos fueron guardados y tu asistencia fue marcada para <strong>"${result.evento.nombre}"</strong>.`);
       } else {
         showMessage("Error: " + result.message, "error");
       }
