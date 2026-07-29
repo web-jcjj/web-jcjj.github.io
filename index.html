@@ -210,42 +210,53 @@
     });
   }
 
-  async function buscarUsuario() {
-    const dniInput = document.getElementById("dni").value.trim();
-    if (!dniInput) {
-      showMessage("Ingrese un número de DNI", "error");
-      return;
-    }
-
-    currentDNI = dniInput;
-    showMessage("Validando información...", "info");
-    document.getElementById("btn-buscar").disabled = true;
-
-    try {
-      const response = await fetch(`${SCRIPT_URL}?action=buscar&dni=${encodeURIComponent(dniInput)}`);
-      const result = await response.json();
-
-      document.getElementById("btn-buscar").disabled = false;
-
-      if (result.success) {
-        if (result.yaRegistradoEnEvento) {
-          showWarningScreen(`El DNI <strong>${currentDNI}</strong> ya registró asistencia previamente para el evento <strong>"${result.evento.nombre}"</strong>.`);
-        } else if (result.encontrado && result.asistenciaMarcada) {
-          showSuccessScreen(`¡Bienvenido/a <strong>${result.usuario.nombres} ${result.usuario.apellidos}</strong>!<br>Tu asistencia ha sido registrada para <strong>"${result.evento.nombre}"</strong>.`);
-        } else {
-          clearMessage();
-          if (result.conjuntos) poblarComboConjuntos(result.conjuntos);
-          document.getElementById("step-search").classList.add("hidden");
-          document.getElementById("step-register").classList.remove("hidden");
-        }
-      } else {
-        showMessage("Error: " + result.message, "error");
-      }
-    } catch (error) {
-      document.getElementById("btn-buscar").disabled = false;
-      showMessage("Error al conectar con la base de datos.", "error");
-    }
+// Reemplaza la función buscarUsuario() en tu código HTML
+async function buscarUsuario() {
+  const dniInput = document.getElementById("dni").value.trim();
+  if (!dniInput) {
+    showMessage("Ingrese un número de DNI", "error");
+    return;
   }
+
+  currentDNI = dniInput;
+  showMessage("Validando información...", "info");
+  document.getElementById("btn-buscar").disabled = true;
+
+  try {
+    const response = await fetch(`${SCRIPT_URL}?action=buscar&dni=${encodeURIComponent(dniInput)}`);
+    const result = await response.json();
+
+    document.getElementById("btn-buscar").disabled = false;
+
+    if (result.success) {
+      if (result.yaRegistradoEnEvento) {
+        showWarningScreen(`El DNI <strong>${currentDNI}</strong> ya registró asistencia previamente para el evento <strong>"${result.evento.nombre}"</strong>.`);
+      } else if (result.encontrado && result.asistenciaMarcada) {
+        showSuccessScreen(`¡Bienvenido/a <strong>${result.usuario.nombres} ${result.usuario.apellidos}</strong>!<br>Tu asistencia ha sido registrada para <strong>"${result.evento.nombre}"</strong>.`);
+      } else {
+        clearMessage();
+        if (result.conjuntos) poblarComboConjuntos(result.conjuntos);
+
+        // Si la API encontró nombres y apellidos, autocompletar en los inputs
+        if (result.datosApi && result.datosApi.exito) {
+          document.getElementById("nombres").value = result.datosApi.nombres;
+          document.getElementById("apellidos").value = result.datosApi.apellidos;
+        } else {
+          document.getElementById("nombres").value = "";
+          document.getElementById("apellidos").value = "";
+        }
+
+        document.getElementById("step-search").classList.add("hidden");
+        document.getElementById("step-register").classList.remove("hidden");
+      }
+    } else {
+      showMessage("Error: " + result.message, "error");
+    }
+  } catch (error) {
+    document.getElementById("btn-buscar").disabled = false;
+    showMessage("Error al conectar con la base de datos.", "error");
+  }
+}
 
   async function registrarNuevo() {
     const nombres = document.getElementById("nombres").value.trim();
