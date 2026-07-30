@@ -1,5 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Control de Asistencia</title>
+
+  <!-- LIBRERÍA PARA LECTOR DE CÓDIGO QR -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <style>
+    * { 
+      box-sizing: border-box; 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+    }
+
+    body { 
+      background-color: #f3f4f6; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      min-height: 100vh;
+      min-height: 100dvh;
+      margin: 0; 
+      padding: 16px; 
+    }
+
+    .card { 
+      background: #ffffff; 
+      padding: 28px 24px; 
+      border-radius: 16px; 
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); 
+      width: 100%; 
+      max-width: 420px; 
+      margin: auto; 
+    }
+
+    h2 { margin-top: 0; color: #1f2937; text-align: center; margin-bottom: 12px; font-size: 22px; }
+    
+    .event-badge { 
+      background-color: #ecfdf5; 
+      color: #065f46; 
+      border: 1px solid #a7f3d0; 
+      padding: 12px 14px; 
+      border-radius: 8px; 
+      font-size: 14px; 
+      text-align: center; 
+      font-weight: 600; 
+      margin-bottom: 20px; 
+      cursor: default;
+    }
+    
+    .form-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 6px; font-weight: 600; color: #374151; font-size: 14px; }
+    
+    input, select { 
+      width: 100%; 
+      padding: 12px; 
+      border: 1px solid #d1d5db; 
+      border-radius: 8px; 
+      font-size: 16px; 
+      background-color: white; 
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    /* Forzar visualización de texto en mayúsculas en campos de texto */
+    input[type="text"], select {
+      text-transform: uppercase;
+    }
+
+    input:focus, select:focus { border-color: #2563eb; }
+
+    /* ESTILOS UNIFICADOS DE BOTONES */
+    button { 
+      width: 100%; 
+      padding: 13px; 
+      background-color: #2563eb; 
+      color: white; 
+      border: none; 
+      border-radius: 8px; 
+      font-weight: bold; 
+      cursor: pointer; 
+      font-size: 15px; 
+      margin-top: 5px; 
+      transition: background-color 0.2s;
+    }
+    button:hover { background-color: #1d4ed8; }
+    button:disabled { background-color: #9ca3af; cursor: not-allowed; }
+
+    .btn-secondary { 
+      background-color: #4b5563; 
+    }
+    .btn-secondary:hover { background-color: #374151; }
+    
+    .hidden { display: none; }
+    .alert { padding: 12px; border-radius: 8px; margin-top: 15px; font-size: 14px; text-align: center; }
+    .alert-error { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .alert-info { background-color: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
+    
+    .status-box { text-align: center; padding: 10px 5px; }
+    .icon-success { font-size: 48px; color: #059669; margin-bottom: 8px; }
+    .icon-warning { font-size: 48px; color: #d97706; margin-bottom: 8px; }
+
+    /* ESTILOS DEL ESCÁNER QR */
+    #reader {
+      width: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 15px;
+      border: 2px dashed #cbd5e1;
+    }
+    .divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 15px 0;
+      color: #9ca3af;
+      font-size: 13px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .divider::before { margin-right: .5em; }
+    .divider::after { margin-left: .5em; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>Control de Asistencia</h2>
+  <div id="event-badge" class="event-badge">Cargando evento activo...</div>
+
+  <!-- Paso 1: Buscar DNI o Escanear QR -->
+  <div id="step-search">
+    
+    <!-- Contenedor dinámico del escáner -->
+    <div id="qr-container" class="hidden">
+      <div id="reader"></div>
+      <button type="button" class="btn-secondary" onclick="detenerEscaner()">Cancelar Escaneo</button>
+    </div>
+
+    <!-- Formulario Tradicional de DNI -->
+    <div id="dni-container">
+      <button type="button" id="btn-qr" onclick="iniciarEscaner()" style="margin-bottom: 15px;">
+        📷 Escanear Código QR
+      </button>
+
+      <div class="divider">O INGRESE MANUALMENTE</div>
+
+      <div class="form-group">
+        <label for="dni">Número de DNI * (8 dígitos)</label>
+        <input type="text" id="dni" placeholder="Ingrese 8 dígitos" minlength="8" maxlength="8" pattern="[0-9]{8}" inputmode="numeric" required autofocus />
+      </div>
+      <button type="button" id="btn-buscar" onclick="buscarUsuario()">Buscar y Registrar Asistencia</button>
+    </div>
+
+  </div>
+
+  <!-- Paso 2: Nuevo Registro -->
+  <div id="step-register" class="hidden">
+    <div class="form-group">
+      <label for="reg-dni">DNI a Registrar *</label>
+      <input type="text" id="reg-dni" readonly style="background-color: #f3f4f6; color: #1f2937; font-weight: bold; cursor: not-allowed;" />
+    </div>
+    <div class="form-group">
+      <label for="nombres">Nombres *</label>
+      <input type="text" id="nombres" required />
+    </div>
+    <div class="form-group">
+      <label for="apellidos">Apellidos *</label>
+      <input type="text" id="apellidos" required />
+    </div>
+    <div class="form-group">
+      <label for="conjunto">Conjunto *</label>
+      <select id="conjunto" required>
+        <option value="">Cargando opciones...</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="telefono">Teléfono (Opcional)</label>
+      <input type="tel" id="telefono" placeholder="Ej: 987654321" inputmode="tel" pattern="[0-9+]*" maxlength="15" />
+    </div>
+    <div class="form-group">
+      <label for="correo">Correo (Opcional)</label>
+      <input type="email" id="correo" placeholder="ejemplo@correo.com" autocomplete="email" />
+    </div>
+    <button type="button" id="btn-guardar" onclick="registrarNuevo()">Guardar y Marcar Asistencia</button>
+    <button type="button" class="btn-secondary" style="margin-top:8px;" onclick="resetForm()">Volver</button>
+  </div>
+
+  <!-- Paso 3A: Registro Exitoso -->
+  <div id="step-success" class="hidden status-box">
+    <div class="icon-success">✓</div>
+    <h3 style="color: #059669; margin-bottom: 8px;">¡Asistencia Registrada!</h3>
+    <p id="success-message-text" style="color: #374151; font-size: 15px; margin-bottom: 20px; line-height: 1.4;"></p>
+    <button type="button" onclick="resetForm()">Registrar Otra Asistencia</button>
+  </div>
+
+  <!-- Paso 3B: Ya Registrado previamente -->
+  <div id="step-warning" class="hidden status-box">
+    <div class="icon-warning">⚠️</div>
+    <h3 style="color: #d97706; margin-bottom: 8px;">¡Asistencia Ya Registrada!</h3>
+    <p id="warning-message-text" style="color: #374151; font-size: 15px; margin-bottom: 20px; line-height: 1.4;"></p>
+    <button type="button" onclick="resetForm()">Entendido / Volver</button>
+  </div>
+
+  <!-- Mensajes de estado -->
+  <div id="status-message"></div>
+</div>
+
 <script>
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwWoFHYyKLoMvD2C1rNQtdpBiu4mwn5jolVPvbFVPHtj10Iv1sqT-Wp-PqdcE5CRVA/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4seyhhepXTXdmt0HSjM0i-rfvqQVElXmihx_6DiVRTnpG_yKNBPE7Rs6q3pBUhGvs/exec";
   const APIS_PERU_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImF6YW5nYXJvLnNhbHVkQGdtYWlsLmNvbSJ9.EsPl6VAmtt6x0vnq-o9IRBFf3lE7L85lecVonoK8rgk";
 
   let currentDNI = "";
@@ -23,7 +236,6 @@
       this.value = this.value.replace(/[^0-9]/g, '');
     });
 
-    // Filtro para el campo teléfono (permite números y el signo +)
     document.getElementById("telefono").addEventListener("input", function(e) {
       this.value = this.value.replace(/[^0-9+]/g, '');
     });
@@ -152,7 +364,6 @@
     document.getElementById("btn-buscar").disabled = true;
 
     try {
-      // 1. Consultar en tu base de datos de Google Sheets
       const response = await fetch(`${SCRIPT_URL}?action=buscar&dni=${encodeURIComponent(dniInput)}`);
       const result = await response.json();
 
@@ -164,13 +375,12 @@
         } else if (result.encontrado && result.asistenciaMarcada) {
           showSuccessScreen(`¡Bienvenido/a <strong>${result.usuario.nombres} ${result.usuario.apellidos}</strong>!<br>Tu asistencia ha sido registrada para <strong>"${result.evento.nombre}"</strong>.`);
         } else {
-          // El DNI NO existe en la base de datos local -> Mostrar formulario y consultar APIS Perú
           clearMessage();
           if (result.conjuntos) poblarComboConjuntos(result.conjuntos);
           
           document.getElementById("reg-dni").value = currentDNI;
 
-          // 2. Consultar directamente a APIS Perú desde el cliente
+          // CONSULTA DIRECTA A APIS PERÚ SI ES NUEVO
           showMessage("Buscando nombres en RENIEC...", "info");
           try {
             const apiRes = await fetch(`https://dniruc.apisperu.com/api/v1/dni/${currentDNI}?token=${APIS_PERU_TOKEN}`);
@@ -297,3 +507,6 @@
     container.innerText = "";
   }
 </script>
+
+</body>
+</html>
