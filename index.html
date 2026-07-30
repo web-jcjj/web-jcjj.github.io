@@ -52,6 +52,7 @@
     
     .form-group { margin-bottom: 15px; }
     label { display: block; margin-bottom: 6px; font-weight: 600; color: #374151; font-size: 14px; }
+    
     input, select { 
       width: 100%; 
       padding: 12px; 
@@ -62,12 +63,19 @@
       outline: none;
       transition: border-color 0.2s;
     }
+
+    /* Forzar visualización de texto en mayúsculas en campos de texto */
+    input[type="text"], input[type="email"], select {
+      text-transform: uppercase;
+    }
+
     input:focus, select:focus { border-color: #2563eb; }
 
+    /* ESTILOS UNIFICADOS DE BOTONES */
     button { 
       width: 100%; 
       padding: 13px; 
-      background-color: #2563eb; 
+      background-color: #2563eb; /* Azul primario uniforme */
       color: white; 
       border: none; 
       border-radius: 8px; 
@@ -79,9 +87,10 @@
     }
     button:hover { background-color: #1d4ed8; }
     button:disabled { background-color: #9ca3af; cursor: not-allowed; }
-    .btn-success { background-color: #059669; }
-    .btn-success:hover { background-color: #047857; }
-    .btn-secondary { background-color: #4b5563; }
+
+    .btn-secondary { 
+      background-color: #4b5563; /* Gris uniforme para acciones de cancelar/volver */
+    }
     .btn-secondary:hover { background-color: #374151; }
     
     .hidden { display: none; }
@@ -135,7 +144,7 @@
 
     <!-- Formulario Tradicional de DNI -->
     <div id="dni-container">
-      <button type="button" class="btn-secondary" id="btn-qr" onclick="iniciarEscaner()" style="margin-bottom: 15px; background-color: #0f766e;">
+      <button type="button" id="btn-qr" onclick="iniciarEscaner()" style="margin-bottom: 15px;">
         📷 Escanear Código QR
       </button>
 
@@ -176,10 +185,10 @@
     </div>
     <div class="form-group">
       <label for="correo">Correo (Opcional)</label>
-      <input type="email" id="correo" placeholder="ejemplo@correo.com" />
+      <input type="email" id="correo" placeholder="EJEMPLO@CORREO.COM" />
     </div>
-    <button type="button" class="btn-success" id="btn-guardar" onclick="registrarNuevo()">Guardar y Marcar Asistencia</button>
-    <button type="button" style="background:#6b7280; margin-top:8px;" onclick="resetForm()">Volver</button>
+    <button type="button" id="btn-guardar" onclick="registrarNuevo()">Guardar y Marcar Asistencia</button>
+    <button type="button" class="btn-secondary" style="margin-top:8px;" onclick="resetForm()">Volver</button>
   </div>
 
   <!-- Paso 3A: Registro Exitoso -->
@@ -187,7 +196,7 @@
     <div class="icon-success">✓</div>
     <h3 style="color: #059669; margin-bottom: 8px;">¡Asistencia Registrada!</h3>
     <p id="success-message-text" style="color: #374151; font-size: 15px; margin-bottom: 20px; line-height: 1.4;"></p>
-    <button type="button" class="btn-success" onclick="resetForm()">Registrar Otra Asistencia</button>
+    <button type="button" onclick="resetForm()">Registrar Otra Asistencia</button>
   </div>
 
   <!-- Paso 3B: Ya Registrado previamente -->
@@ -195,7 +204,7 @@
     <div class="icon-warning">⚠️</div>
     <h3 style="color: #d97706; margin-bottom: 8px;">¡Asistencia Ya Registrada!</h3>
     <p id="warning-message-text" style="color: #374151; font-size: 15px; margin-bottom: 20px; line-height: 1.4;"></p>
-    <button type="button" style="background:#2563eb;" onclick="resetForm()">Entendido / Volver</button>
+    <button type="button" onclick="resetForm()">Entendido / Volver</button>
   </div>
 
   <!-- Mensajes de estado -->
@@ -337,7 +346,6 @@
   async function buscarUsuario() {
     const dniInput = document.getElementById("dni").value.trim();
     
-    // Validación estricta de 8 dígitos
     if (!dniInput) {
       showMessage("Ingrese un número de DNI.", "error");
       return;
@@ -381,11 +389,12 @@
   }
 
   async function registrarNuevo() {
-    const nombres = document.getElementById("nombres").value.trim();
-    const apellidos = document.getElementById("apellidos").value.trim();
-    const conjunto = document.getElementById("conjunto").value.trim();
+    // Se aplica .toUpperCase() a los campos de texto para guardarse siempre en MAYÚSCULAS
+    const nombres = document.getElementById("nombres").value.trim().toUpperCase();
+    const apellidos = document.getElementById("apellidos").value.trim().toUpperCase();
+    const conjunto = document.getElementById("conjunto").value.trim().toUpperCase();
     const telefono = document.getElementById("telefono").value.trim();
-    const correo = document.getElementById("correo").value.trim();
+    const correo = document.getElementById("correo").value.trim().toUpperCase();
 
     if (!nombres || !apellidos || !conjunto) {
       showMessage("Por favor complete Nombres, Apellidos y seleccione un Conjunto.", "error");
