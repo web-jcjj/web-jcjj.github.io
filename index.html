@@ -65,7 +65,8 @@
     }
 
     /* Forzar visualización de texto en mayúsculas en campos de texto */
-    input[type="text"], input[type="email"], select {
+    
+input[type="text"], select {
       text-transform: uppercase;
     }
 
@@ -185,7 +186,7 @@
     </div>
     <div class="form-group">
       <label for="correo">Correo (Opcional)</label>
-      <input type="email" id="correo" placeholder="EJEMPLO@CORREO.COM" />
+      <input type="email" id="correo" placeholder="ejemplo@correo.com" autocomplete="email" />
     </div>
     <button type="button" id="btn-guardar" onclick="registrarNuevo()">Guardar y Marcar Asistencia</button>
     <button type="button" class="btn-secondary" style="margin-top:8px;" onclick="resetForm()">Volver</button>
@@ -238,6 +239,10 @@
     // Filtro para el campo teléfono (permite números y el signo +)
     document.getElementById("telefono").addEventListener("input", function(e) {
       this.value = this.value.replace(/[^0-9+]/g, '');
+    });
+
+    document.getElementById("correo").addEventListener("input", function() {
+      this.value = this.value.toLowerCase();
     });
   });
 
@@ -394,7 +399,7 @@
     const apellidos = document.getElementById("apellidos").value.trim().toUpperCase();
     const conjunto = document.getElementById("conjunto").value.trim().toUpperCase();
     const telefono = document.getElementById("telefono").value.trim();
-    const correo = document.getElementById("correo").value.trim().toUpperCase();
+    const correo = document.getElementById("correo").value.trim().toLowerCase();
 
     if (!nombres || !apellidos || !conjunto) {
       showMessage("Por favor complete Nombres, Apellidos y seleccione un Conjunto.", "error");
