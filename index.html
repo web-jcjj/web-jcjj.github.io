@@ -142,8 +142,8 @@
       <div class="divider">O INGRESE MANUALMENTE</div>
 
       <div class="form-group">
-        <label for="dni">Número de DNI</label>
-        <input type="text" id="dni" placeholder="Ingrese DNI" maxlength="8" pattern="[0-9]*" inputmode="numeric" required autofocus />
+        <label for="dni">Número de DNI * (8 dígitos)</label>
+        <input type="text" id="dni" placeholder="Ingrese 8 dígitos" minlength="8" maxlength="8" pattern="[0-9]{8}" inputmode="numeric" required autofocus />
       </div>
       <button type="button" id="btn-buscar" onclick="buscarUsuario()">Buscar y Registrar Asistencia</button>
     </div>
@@ -172,11 +172,11 @@
     </div>
     <div class="form-group">
       <label for="telefono">Teléfono (Opcional)</label>
-      <input type="tel" id="telefono" />
+      <input type="tel" id="telefono" placeholder="Ej: 987654321" inputmode="tel" pattern="[0-9+]*" maxlength="15" />
     </div>
     <div class="form-group">
       <label for="correo">Correo (Opcional)</label>
-      <input type="email" id="correo" />
+      <input type="email" id="correo" placeholder="ejemplo@correo.com" />
     </div>
     <button type="button" class="btn-success" id="btn-guardar" onclick="registrarNuevo()">Guardar y Marcar Asistencia</button>
     <button type="button" style="background:#6b7280; margin-top:8px;" onclick="resetForm()">Volver</button>
@@ -207,36 +207,41 @@
 
   let currentDNI = "";
   let html5QrCode = null;
-  let isProcessingScan = false; // Bandera para evitar peticiones duplicadas
+  let isProcessingScan = false;
 
   document.addEventListener("DOMContentLoaded", () => {
     cargarInfoInicial();
 
-    document.getElementById("dni").addEventListener("keypress", function(event) {
+    const dniInput = document.getElementById("dni");
+    
+    dniInput.addEventListener("keypress", function(event) {
       if (event.key === "Enter") {
         event.preventDefault();
-        // Limpia caracteres no numéricos y recorta a 8 por si se usa pistola láser
         this.value = this.value.replace(/[^0-9]/g, '').substring(0, 8);
         buscarUsuario();
       }
     });
 
-    document.getElementById("dni").addEventListener("input", function(e) {
+    dniInput.addEventListener("input", function(e) {
       this.value = this.value.replace(/[^0-9]/g, '');
+    });
+
+    // Filtro para el campo teléfono (permite números y el signo +)
+    document.getElementById("telefono").addEventListener("input", function(e) {
+      this.value = this.value.replace(/[^0-9+]/g, '');
     });
   });
 
   /* ===================================================
-     LÓGICA DEL ESCÁNER DE CÓDIGO QR (OPTIMIZADA)
+     LÓGICA DEL ESCÁNER DE CÓDIGO QR
      =================================================== */
   async function iniciarEscaner() {
     clearMessage();
     document.getElementById("qr-container").classList.remove("hidden");
     document.getElementById("dni-container").classList.add("hidden");
     
-    isProcessingScan = false; // Reseteamos la bandera
+    isProcessingScan = false;
 
-    // Limpia instancia anterior para evitar parpadeos/bloqueos
     if (html5QrCode) {
       try { await html5QrCode.clear(); } catch(e) {}
     }
@@ -255,7 +260,7 @@
   }
 
   async function onScanSuccess(decodedText) {
-    if (isProcessingScan) return; // Ignora lecturas adicionales mientras procesa
+    if (isProcessingScan) return;
     isProcessingScan = true;
 
     let dniLimpio = decodedText.trim().replace(/[^0-9]/g, '');
@@ -264,12 +269,12 @@
       dniLimpio = dniLimpio.substring(0, 8);
     }
 
-    if (dniLimpio) {
-      await detenerEscaner(); // Espera a liberar la cámara antes de llamar a la API
+    if (dniLimpio && dniLimpio.length === 8) {
+      await detenerEscaner();
       document.getElementById("dni").value = dniLimpio;
       await buscarUsuario();
     } else {
-      showMessage("El código QR no contiene un DNI válido.", "error");
+      showMessage("El código QR no contiene un DNI válido de 8 dígitos.", "error");
     }
     
     isProcessingScan = false;
@@ -331,8 +336,14 @@
 
   async function buscarUsuario() {
     const dniInput = document.getElementById("dni").value.trim();
+    
+    // Validación estricta de 8 dígitos
     if (!dniInput) {
-      showMessage("Ingrese un número de DNI", "error");
+      showMessage("Ingrese un número de DNI.", "error");
+      return;
+    }
+    if (dniInput.length !== 8 || !/^[0-9]{8}$/.test(dniInput)) {
+      showMessage("El DNI debe tener exactamente 8 dígitos numéricos.", "error");
       return;
     }
 
@@ -355,7 +366,6 @@
           clearMessage();
           if (result.conjuntos) poblarComboConjuntos(result.conjuntos);
           
-          // Asigna el DNI ingresado al nuevo campo de texto readonly
           document.getElementById("reg-dni").value = currentDNI;
           
           document.getElementById("step-search").classList.add("hidden");
