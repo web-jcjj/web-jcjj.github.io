@@ -152,7 +152,7 @@ input[type="text"], select {
       <div class="divider">O INGRESE MANUALMENTE</div>
 
       <div class="form-group">
-        <label for="dni">Número de DNI * (8 dígitos)</label>
+        <label for="dni">Número de DNI *</label>
         <input type="text" id="dni" placeholder="Ingrese 8 dígitos" minlength="8" maxlength="8" pattern="[0-9]{8}" inputmode="numeric" required autofocus />
       </div>
       <button type="button" id="btn-buscar" onclick="buscarUsuario()">Buscar y Registrar Asistencia</button>
@@ -213,7 +213,7 @@ input[type="text"], select {
 </div>
 
 <script>
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4seyhhepXTXdmt0HSjM0i-rfvqQVElXmihx_6DiVRTnpG_yKNBPE7Rs6q3pBUhGvs/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwWoFHYyKLoMvD2C1rNQtdpBiu4mwn5jolVPvbFVPHtj10Iv1sqT-Wp-PqdcE5CRVA/exec";
 
   let currentDNI = "";
   let html5QrCode = null;
