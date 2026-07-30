@@ -61,7 +61,15 @@
       font-size: 16px; 
       background-color: white; 
       outline: none;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, background-color 0.2s;
+    }
+
+    /* Estilo visual para campos bloqueados/lectura */
+    input[readonly] {
+      background-color: #f3f4f6 !important;
+      color: #374151 !important;
+      font-weight: 600;
+      cursor: not-allowed;
     }
 
     /* Forzar visualización de texto en mayúsculas en campos de texto */
@@ -163,7 +171,7 @@
   <div id="step-register" class="hidden">
     <div class="form-group">
       <label for="reg-dni">DNI a Registrar *</label>
-      <input type="text" id="reg-dni" readonly style="background-color: #f3f4f6; color: #1f2937; font-weight: bold; cursor: not-allowed;" />
+      <input type="text" id="reg-dni" readonly />
     </div>
     <div class="form-group">
       <label for="nombres">Nombres *</label>
@@ -382,22 +390,36 @@
 
           // CONSULTA DIRECTA A APIS PERÚ SI ES NUEVO
           showMessage("Buscando nombres en RENIEC...", "info");
+          
+          const inputNombres = document.getElementById("nombres");
+          const inputApellidos = document.getElementById("apellidos");
+
           try {
             const apiRes = await fetch(`https://dniruc.apisperu.com/api/v1/dni/${currentDNI}?token=${APIS_PERU_TOKEN}`);
             const apiData = await apiRes.json();
 
-            if (apiData.success) {
-              document.getElementById("nombres").value = (apiData.nombres || "").toUpperCase();
+            if (apiData.success && (apiData.nombres || apiData.apellidoPaterno)) {
+              // Rellenar valores
+              inputNombres.value = (apiData.nombres || "").toUpperCase();
               const apellidosCompletos = `${apiData.apellidoPaterno || ""} ${apiData.apellidoMaterno || ""}`.trim().toUpperCase();
-              document.getElementById("apellidos").value = apellidosCompletos;
+              inputApellidos.value = apellidosCompletos;
+
+              // BLOQUEAR EDICIÓN (RENIEC)
+              inputNombres.readOnly = true;
+              inputApellidos.readOnly = true;
             } else {
-              document.getElementById("nombres").value = "";
-              document.getElementById("apellidos").value = "";
+              // Si no devuelve datos, dejar limpios y habilitados
+              inputNombres.value = "";
+              inputApellidos.value = "";
+              inputNombres.readOnly = false;
+              inputApellidos.readOnly = false;
             }
           } catch (apiErr) {
             console.error("Error al consultar APIS Perú:", apiErr);
-            document.getElementById("nombres").value = "";
-            document.getElementById("apellidos").value = "";
+            inputNombres.value = "";
+            inputApellidos.value = "";
+            inputNombres.readOnly = false;
+            inputApellidos.readOnly = false;
           }
 
           clearMessage();
@@ -485,8 +507,15 @@
 
     document.getElementById("dni").value = "";
     document.getElementById("reg-dni").value = "";
-    document.getElementById("nombres").value = "";
-    document.getElementById("apellidos").value = "";
+    
+    // Desbloquear y limpiar Nombres/Apellidos
+    const inputNombres = document.getElementById("nombres");
+    const inputApellidos = document.getElementById("apellidos");
+    inputNombres.value = "";
+    inputApellidos.value = "";
+    inputNombres.readOnly = false;
+    inputApellidos.readOnly = false;
+
     document.getElementById("conjunto").value = "";
     document.getElementById("telefono").value = "";
     document.getElementById("correo").value = "";
