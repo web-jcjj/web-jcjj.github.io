@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Control de Asistencia</title>
 
-  <!-- LIBRERÍA PARA LECTOR DE CÓDIGO QR Y CÓDIGOS DE BARRAS -->
+  <!-- LIBRERÍA PARA LECTOR DE CÓDIGO QR -->
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <style>
@@ -89,7 +89,7 @@
     button:disabled { background-color: #9ca3af; cursor: not-allowed; }
 
     .btn-secondary { 
-      background-color: #4b5563; /* Gris uniforme para acciones secundarias */
+      background-color: #4b5563; /* Gris uniforme para acciones de cancelar/volver */
     }
     .btn-secondary:hover { background-color: #374151; }
     
@@ -102,25 +102,14 @@
     .icon-success { font-size: 48px; color: #059669; margin-bottom: 8px; }
     .icon-warning { font-size: 48px; color: #d97706; margin-bottom: 8px; }
 
-    /* ESTILOS DEL ESCÁNER DE QR Y CÓDIGOS DE BARRAS */
+    /* ESTILOS DEL ESCÁNER QR */
     #reader {
       width: 100%;
       border-radius: 12px;
       overflow: hidden;
-      margin-bottom: 10px;
-      border: 2px dashed #cbd5e1;
-      background-color: #000;
-    }
-    
-    .scanner-controls {
-      display: flex;
-      gap: 8px;
       margin-bottom: 15px;
+      border: 2px dashed #cbd5e1;
     }
-    .scanner-controls button {
-      margin-top: 0;
-    }
-
     .divider {
       display: flex;
       align-items: center;
@@ -144,22 +133,19 @@
   <h2>Control de Asistencia</h2>
   <div id="event-badge" class="event-badge">Cargando evento activo...</div>
 
-  <!-- Paso 1: Buscar DNI o Escanear QR / Código de Barras -->
+  <!-- Paso 1: Buscar DNI o Escanear QR -->
   <div id="step-search">
     
     <!-- Contenedor dinámico del escáner -->
     <div id="qr-container" class="hidden">
       <div id="reader"></div>
-      <div class="scanner-controls">
-        <button type="button" id="btn-switch-cam" class="btn-secondary" onclick="cambiarCamara()">🔄 Cambiar Cámara</button>
-        <button type="button" class="btn-secondary" onclick="detenerEscaner()">Cancelar Escaneo</button>
-      </div>
+      <button type="button" class="btn-secondary" onclick="detenerEscaner()">Cancelar Escaneo</button>
     </div>
 
     <!-- Formulario Tradicional de DNI -->
     <div id="dni-container">
       <button type="button" id="btn-qr" onclick="iniciarEscaner()" style="margin-bottom: 15px;">
-        📷 Escanear QR / Código de Barras
+        📷 Escanear Código QR
       </button>
 
       <div class="divider">O INGRESE MANUALMENTE</div>
@@ -231,8 +217,6 @@
   let currentDNI = "";
   let html5QrCode = null;
   let isProcessingScan = false;
-  let availableCameras = [];
-  let currentCameraIndex = 0;
 
   document.addEventListener("DOMContentLoaded", () => {
     cargarInfoInicial();
@@ -251,13 +235,14 @@
       this.value = this.value.replace(/[^0-9]/g, '');
     });
 
+    // Filtro para el campo teléfono (permite números y el signo +)
     document.getElementById("telefono").addEventListener("input", function(e) {
       this.value = this.value.replace(/[^0-9+]/g, '');
     });
   });
 
   /* ===================================================
-     LÓGICA DEL ESCÁNER DE CÓDIGOS DE BARRAS / QR
+     LÓGICA DEL ESCÁNER DE CÓDIGO QR
      =================================================== */
   async function iniciarEscaner() {
     clearMessage();
@@ -271,95 +256,34 @@
     }
 
     html5QrCode = new Html5Qrcode("reader");
+    const config = { fps: 10, qrbox: { width: 220, height: 220 } };
 
-    // Configuración optimizada para QR y Códigos de Barras
-    const config = { 
-      fps: 15, 
-      qrbox: { width: 280, height: 160 }, // Rectángulo ancho para facilitar la lectura de códigos de barras
-      aspectRatio: 1.0,
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.QR_CODE,
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.PDF_417,
-        Html5QrcodeSupportedFormats.CODABAR
-      ]
-    };
-
-    try {
-      availableCameras = await Html5Qrcode.getCameras();
-      if (availableCameras && availableCameras.length > 0) {
-        // Intentar seleccionar la cámara trasera si hay más de una
-        currentCameraIndex = availableCameras.findIndex(cam => 
-          cam.label.toLowerCase().includes('back') || 
-          cam.label.toLowerCase().includes('trasera') || 
-          cam.label.toLowerCase().includes('environment')
-        );
-        if (currentCameraIndex === -1) currentCameraIndex = 0;
-
-        await arrancarCamara(availableCameras[currentCameraIndex].id, config);
-      } else {
-        // Fallback a la cámara por entorno si no lista dispositivos
-        await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
-      }
-    } catch (err) {
-      showMessage("No se pudo acceder a la cámara o no se otorgaron permisos.", "error");
+    html5QrCode.start(
+      { facingMode: "environment" }, 
+      config, 
+      onScanSuccess
+    ).catch(err => {
+      showMessage("No se pudo acceder a la cámara o el navegador bloqueó el permiso.", "error");
       detenerEscaner();
-    }
-  }
-
-  async function arrancarCamara(cameraId, config) {
-    await html5QrCode.start(cameraId, config, onScanSuccess)
-      .catch(err => showMessage("Error al iniciar cámara seleccionada.", "error"));
-  }
-
-  async function cambiarCamara() {
-    if (availableCameras.length <= 1) {
-      showMessage("No hay cámaras adicionales disponibles.", "info");
-      return;
-    }
-    
-    currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
-    
-    if (html5QrCode && html5QrCode.isScanning) {
-      await html5QrCode.stop();
-      const config = { 
-        fps: 15, 
-        qrbox: { width: 280, height: 160 },
-        aspectRatio: 1.0 
-      };
-      await arrancarCamara(availableCameras[currentCameraIndex].id, config);
-    }
+    });
   }
 
   async function onScanSuccess(decodedText) {
     if (isProcessingScan) return;
     isProcessingScan = true;
 
-    // Extracción inteligente de DNI (busca una secuencia exacta de 8 dígitos)
-    let dniEncontrado = null;
-    const match = decodedText.match(/\b\d{8}\b/);
-
-    if (match) {
-      dniEncontrado = match[0];
-    } else {
-      // Limpiar texto para obtener solo dígitos en caso de formatos sin espacios
-      let dniLimpio = decodedText.trim().replace(/[^0-9]/g, '');
-      if (dniLimpio.length >= 8) {
-        dniEncontrado = dniLimpio.substring(0, 8);
-      }
+    let dniLimpio = decodedText.trim().replace(/[^0-9]/g, '');
+    
+    if (dniLimpio.length > 8) {
+      dniLimpio = dniLimpio.substring(0, 8);
     }
 
-    if (dniEncontrado && dniEncontrado.length === 8) {
+    if (dniLimpio && dniLimpio.length === 8) {
       await detenerEscaner();
-      document.getElementById("dni").value = dniEncontrado;
+      document.getElementById("dni").value = dniLimpio;
       await buscarUsuario();
     } else {
-      showMessage("No se detectó un DNI válido de 8 dígitos en el código leído.", "error");
+      showMessage("El código QR no contiene un DNI válido de 8 dígitos.", "error");
     }
     
     isProcessingScan = false;
@@ -372,7 +296,7 @@
         html5QrCode.clear();
       } catch (err) {
         console.warn("Error al detener cámara:", err);
-      } final {
+      } finally {
         ocultarUIEscaner();
       }
     } else {
@@ -465,6 +389,7 @@
   }
 
   async function registrarNuevo() {
+    // Se aplica .toUpperCase() a los campos de texto para guardarse siempre en MAYÚSCULAS
     const nombres = document.getElementById("nombres").value.trim().toUpperCase();
     const apellidos = document.getElementById("apellidos").value.trim().toUpperCase();
     const conjunto = document.getElementById("conjunto").value.trim().toUpperCase();
