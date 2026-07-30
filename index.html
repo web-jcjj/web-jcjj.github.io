@@ -152,8 +152,9 @@
 
   <!-- Paso 2: Nuevo Registro -->
   <div id="step-register" class="hidden">
-    <div class="alert alert-info" style="margin-bottom:15px;">
-      El DNI no está registrado. Ingrese sus datos para completar el registro.
+    <div class="form-group">
+      <label for="reg-dni">DNI a Registrar *</label>
+      <input type="text" id="reg-dni" readonly style="background-color: #f3f4f6; color: #1f2937; font-weight: bold; cursor: not-allowed;" />
     </div>
     <div class="form-group">
       <label for="nombres">Nombres *</label>
@@ -353,6 +354,10 @@
         } else {
           clearMessage();
           if (result.conjuntos) poblarComboConjuntos(result.conjuntos);
+          
+          // Asigna el DNI ingresado al nuevo campo de texto readonly
+          document.getElementById("reg-dni").value = currentDNI;
+          
           document.getElementById("step-search").classList.add("hidden");
           document.getElementById("step-register").classList.remove("hidden");
         }
@@ -436,6 +441,7 @@
     document.getElementById("step-search").classList.remove("hidden");
 
     document.getElementById("dni").value = "";
+    document.getElementById("reg-dni").value = "";
     document.getElementById("nombres").value = "";
     document.getElementById("apellidos").value = "";
     document.getElementById("conjunto").value = "";
