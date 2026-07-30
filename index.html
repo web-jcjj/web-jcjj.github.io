@@ -381,7 +381,9 @@ async function buscarUsuario() {
           
           document.getElementById("reg-dni").value = currentDNI;
           
-          // --- INTEGRACIÓN: Autocompletar Nombres y Apellidos ---
+          // =========================================================
+          // AUTOCOMPLETAR NOMBRES Y APELLIDOS CON LA RESPUESTA DE LA API
+          // =========================================================
           if (result.datosAutocompletados) {
             document.getElementById("nombres").value = result.datosAutocompletados.nombres || "";
             document.getElementById("apellidos").value = result.datosAutocompletados.apellidos || "";
@@ -401,7 +403,6 @@ async function buscarUsuario() {
       showMessage("Error al conectar con la base de datos.", "error");
     }
   }
-
   async function registrarNuevo() {
     // Se aplica .toUpperCase() a los campos de texto para guardarse siempre en MAYÚSCULAS
     const nombres = document.getElementById("nombres").value.trim().toUpperCase();
