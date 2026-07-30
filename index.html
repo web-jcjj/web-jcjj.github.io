@@ -206,6 +206,7 @@
 
   let currentDNI = "";
   let html5QrCode = null;
+  let isProcessingScan = false; // Bandera para evitar peticiones duplicadas
 
   document.addEventListener("DOMContentLoaded", () => {
     cargarInfoInicial();
@@ -213,6 +214,8 @@
     document.getElementById("dni").addEventListener("keypress", function(event) {
       if (event.key === "Enter") {
         event.preventDefault();
+        // Limpia caracteres no numéricos y recorta a 8 por si se usa pistola láser
+        this.value = this.value.replace(/[^0-9]/g, '').substring(0, 8);
         buscarUsuario();
       }
     });
@@ -223,16 +226,21 @@
   });
 
   /* ===================================================
-     LÓGICA DEL ESCÁNER DE CÓDIGO QR
+     LÓGICA DEL ESCÁNER DE CÓDIGO QR (OPTIMIZADA)
      =================================================== */
-  function iniciarEscaner() {
+  async function iniciarEscaner() {
     clearMessage();
     document.getElementById("qr-container").classList.remove("hidden");
     document.getElementById("dni-container").classList.add("hidden");
+    
+    isProcessingScan = false; // Reseteamos la bandera
+
+    // Limpia instancia anterior para evitar parpadeos/bloqueos
+    if (html5QrCode) {
+      try { await html5QrCode.clear(); } catch(e) {}
+    }
 
     html5QrCode = new Html5Qrcode("reader");
-    
-    // Configura preferencia para la cámara trasera ('environment')
     const config = { fps: 10, qrbox: { width: 220, height: 220 } };
 
     html5QrCode.start(
@@ -245,33 +253,37 @@
     });
   }
 
-  function onScanSuccess(decodedText) {
-    // Limpia el texto por si el QR contiene espacios extras o caracteres no numéricos
+  async function onScanSuccess(decodedText) {
+    if (isProcessingScan) return; // Ignora lecturas adicionales mientras procesa
+    isProcessingScan = true;
+
     let dniLimpio = decodedText.trim().replace(/[^0-9]/g, '');
     
-    // Si el QR tiene más de 8 dígitos, extrae los primeros 8
     if (dniLimpio.length > 8) {
       dniLimpio = dniLimpio.substring(0, 8);
     }
 
     if (dniLimpio) {
-      detenerEscaner();
+      await detenerEscaner(); // Espera a liberar la cámara antes de llamar a la API
       document.getElementById("dni").value = dniLimpio;
-      // Dispara automáticamente la búsqueda existente
-      buscarUsuario();
+      await buscarUsuario();
     } else {
       showMessage("El código QR no contiene un DNI válido.", "error");
     }
+    
+    isProcessingScan = false;
   }
 
-  function detenerEscaner() {
+  async function detenerEscaner() {
     if (html5QrCode && html5QrCode.isScanning) {
-      html5QrCode.stop().then(() => {
+      try {
+        await html5QrCode.stop();
         html5QrCode.clear();
+      } catch (err) {
+        console.warn("Error al detener cámara:", err);
+      } finally {
         ocultarUIEscaner();
-      }).catch(err => {
-        ocultarUIEscaner();
-      });
+      }
     } else {
       ocultarUIEscaner();
     }
@@ -283,7 +295,7 @@
   }
 
   /* ===================================================
-     FLUJO PRINCIPAL DE ASISTENCIA (SIN CAMBIOS)
+     FLUJO PRINCIPAL DE ASISTENCIA
      =================================================== */
   async function cargarInfoInicial() {
     try {
@@ -368,7 +380,6 @@
     showMessage("Guardando registro y marcando asistencia...", "info");
     document.getElementById("btn-guardar").disabled = true;
 
-    // Envio POST optimizado para Apps Script
     try {
       const response = await fetch(SCRIPT_URL, {
         method: "POST",
