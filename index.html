@@ -348,7 +348,7 @@ input[type="text"], select {
     });
   }
 
-  async function buscarUsuario() {
+async function buscarUsuario() {
     const dniInput = document.getElementById("dni").value.trim();
     
     if (!dniInput) {
@@ -381,6 +381,15 @@ input[type="text"], select {
           
           document.getElementById("reg-dni").value = currentDNI;
           
+          // --- INTEGRACIÓN: Autocompletar Nombres y Apellidos ---
+          if (result.datosAutocompletados) {
+            document.getElementById("nombres").value = result.datosAutocompletados.nombres || "";
+            document.getElementById("apellidos").value = result.datosAutocompletados.apellidos || "";
+          } else {
+            document.getElementById("nombres").value = "";
+            document.getElementById("apellidos").value = "";
+          }
+
           document.getElementById("step-search").classList.add("hidden");
           document.getElementById("step-register").classList.remove("hidden");
         }
