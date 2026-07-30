@@ -35,7 +35,7 @@
       margin: auto; 
     }
 
-    h2 { margin-top: 0; color: #1f2937; text-align: center; margin-bottom: 12px; font-size: 22px; }
+    h2 { margin-top: 0; color: #1f2937; text-align: center; margin-bottom: 8px; font-size: 22px; }
     
     .event-badge { 
       background-color: #ecfdf5; 
@@ -46,8 +46,36 @@
       font-size: 14px; 
       text-align: center; 
       font-weight: 600; 
-      margin-bottom: 20px; 
+      margin-bottom: 15px; 
       cursor: default;
+    }
+
+    /* ESTILOS DEL CHECKBOX DE MODO */
+    .mode-option {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+
+    .mode-option input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .mode-option label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 0;
+      cursor: pointer;
+      user-select: none;
     }
     
     .form-group { margin-bottom: 15px; }
@@ -140,6 +168,12 @@
 <div class="card">
   <h2>Control de Asistencia</h2>
   <div id="event-badge" class="event-badge">Cargando evento activo...</div>
+
+  <!-- CHECKBOX DE MODO DE OPERACIÓN -->
+  <div class="mode-option">
+    <label for="allow-new-users">Permitir registrar usuarios nuevos</label>
+    <input type="checkbox" id="allow-new-users" checked />
+  </div>
 
   <!-- Paso 1: Buscar DNI o Escanear QR -->
   <div id="step-search">
@@ -357,6 +391,7 @@
 
   async function buscarUsuario() {
     const dniInput = document.getElementById("dni").value.trim();
+    const permitirNuevos = document.getElementById("allow-new-users").checked;
     
     if (!dniInput) {
       showMessage("Ingrese un número de DNI.", "error");
@@ -383,6 +418,13 @@
         } else if (result.encontrado && result.asistenciaMarcada) {
           showSuccessScreen(`¡Bienvenido/a <strong>${result.usuario.nombres} ${result.usuario.apellidos}</strong>!<br>Tu asistencia ha sido registrada para <strong>"${result.evento.nombre}"</strong>.`);
         } else {
+          
+          // EVALUAR SI EL CHECKBOX PERMITE REGISTRAR NUEVOS USUARIOS
+          if (!permitirNuevos) {
+            showMessage(`El DNI ${currentDNI} no está registrado en la base de datos. La opción de nuevos registros está desactivada.`, "error");
+            return;
+          }
+
           clearMessage();
           if (result.conjuntos) poblarComboConjuntos(result.conjuntos);
           
@@ -399,7 +441,6 @@
             const apiData = await apiRes.json();
 
             if (apiData.success && (apiData.nombres || apiData.apellidoPaterno)) {
-              // Rellenar valores
               inputNombres.value = (apiData.nombres || "").toUpperCase();
               const apellidosCompletos = `${apiData.apellidoPaterno || ""} ${apiData.apellidoMaterno || ""}`.trim().toUpperCase();
               inputApellidos.value = apellidosCompletos;
@@ -408,7 +449,6 @@
               inputNombres.readOnly = true;
               inputApellidos.readOnly = true;
             } else {
-              // Si no devuelve datos, dejar limpios y habilitados
               inputNombres.value = "";
               inputApellidos.value = "";
               inputNombres.readOnly = false;
