@@ -365,11 +365,9 @@ async function buscarUsuario() {
     document.getElementById("btn-buscar").disabled = true;
 
     try {
+      // 1. Consultar a tu base de datos (Google Sheets)
       const response = await fetch(`${SCRIPT_URL}?action=buscar&dni=${encodeURIComponent(dniInput)}`);
       const result = await response.json();
-
-      // DEBUG: Ver respuesta completa en consola
-      console.log("Respuesta del servidor:", result);
 
       document.getElementById("btn-buscar").disabled = false;
 
@@ -379,22 +377,34 @@ async function buscarUsuario() {
         } else if (result.encontrado && result.asistenciaMarcada) {
           showSuccessScreen(`¡Bienvenido/a <strong>${result.usuario.nombres} ${result.usuario.apellidos}</strong>!<br>Tu asistencia ha sido registrada para <strong>"${result.evento.nombre}"</strong>.`);
         } else {
+          // El DNI NO está registrado en la hoja de cálculo
           clearMessage();
           if (result.conjuntos) poblarComboConjuntos(result.conjuntos);
           
           document.getElementById("reg-dni").value = currentDNI;
-          
-          // --- AUTOCOMPLETAR DATO DE API ---
-          if (result.datosAutocompletados) {
-            console.log("Datos de API recibidos:", result.datosAutocompletados);
-            document.getElementById("nombres").value = result.datosAutocompletados.nombres || "";
-            document.getElementById("apellidos").value = result.datosAutocompletados.apellidos || "";
-          } else {
-            console.warn("No se recibió el objeto datosAutocompletados");
+
+          // 2. Consultar directamente a APIS Perú desde el cliente
+          showMessage("Buscando nombres en RENIEC...", "info");
+          try {
+            const token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6ImF6YW5nYXJvLnNhbHVkQGdtYWlsLmNvbSJ9.EsPl6VAmtt6x0vnq-o9IRBFf3lE7L85lecVonoK8rgk";
+            const apiRes = await fetch(`https://dniruc.apisperu.com/api/v1/dni/${currentDNI}?token=${token}`);
+            const apiData = await apiRes.json();
+
+            if (apiData.success) {
+              document.getElementById("nombres").value = (apiData.nombres || "").toUpperCase();
+              const apellidosCompletos = `${apiData.apellidoPaterno || ""} ${apiData.apellidoMaterno || ""}`.trim().toUpperCase();
+              document.getElementById("apellidos").value = apellidosCompletos;
+            } else {
+              document.getElementById("nombres").value = "";
+              document.getElementById("apellidos").value = "";
+            }
+          } catch (apiErr) {
+            console.error("Error al consultar APIS Perú directamente:", apiErr);
             document.getElementById("nombres").value = "";
             document.getElementById("apellidos").value = "";
           }
 
+          clearMessage();
           document.getElementById("step-search").classList.add("hidden");
           document.getElementById("step-register").classList.remove("hidden");
         }
@@ -402,7 +412,6 @@ async function buscarUsuario() {
         showMessage("Error: " + result.message, "error");
       }
     } catch (error) {
-      console.error("Error al buscar:", error);
       document.getElementById("btn-buscar").disabled = false;
       showMessage("Error al conectar con la base de datos.", "error");
     }
